@@ -1,64 +1,85 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stegra – NFC Rentals (MVP)</title>
 
-  <!-- Viktigt: INTE defer här, så window.supabase finns innan vår kod körs -->
+  <!-- Load Supabase UMD (no defer so window.supabase is ready) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:#0b1020;color:#ecf0ff}
-    .wrap{max-width:640px;margin:0 auto;padding:20px}
-    .card{background:#121a34;border:1px solid #1f2a4a;border-radius:14px;padding:16px}
-    h1{margin:0 0 8px;font-size:20px} .muted{color:#9aa4c7}
-    label{display:block;margin-top:10px;font-size:14px;color:#9aa4c7}
-    input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a385f;background:#0f1630;color:#ecf0ff;font-size:16px}
-    button{cursor:pointer;background:#24409a;border-color:#3550a7;margin-top:14px}
-    .pill{display:inline-block;padding:5px 10px;border:1px solid #365; border-radius:999px; font-size:12px}
+    :root { --bg:#0b1020; --fg:#ecf0ff; --muted:#9aa4c7; --card:#121a34; --border:#1f2a4a; --btn:#24409a; --btnb:#3550a7; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:var(--bg);color:var(--fg)}
+    .wrap{max-width:760px;margin:0 auto;padding:20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    h1{margin:0 0 8px;font-size:22px}
+    h2{margin:10px 0 0;font-size:18px;color:var(--fg)}
+    .muted{color:var(--muted)}
+    label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
+    input,button{width:100%;padding:12px;border-radius:12px;border:1px solid #2a385f;background:#0f1630;color:var(--fg);font-size:16px}
+    button{cursor:pointer;background:var(--btn);border-color:var(--btnb);margin-top:14px}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .small{font-size:12px;color:#a6b3df;margin-top:6px}
     .hidden{display:none}
+
+    /* List styles */
+    .list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .li{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:12px;background:#0f1630}
+    .right{margin-left:auto}
+    .dot{width:12px;height:12px;border-radius:999px;display:inline-block}
+    .green{background:#22c55e}
+    .red{background:#ef4444}
+    .gray{background:#9aa4c7}
+    a.itemlink{color:#9ec1ff;text-decoration:none}
+    .pill{display:inline-block;padding:5px 10px;border:1px solid #365; border-radius:999px; font-size:12px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Stegra – NFC Rentals</h1>
-      <div id="msg" class="muted">Laddar…</div>
+      <div id="msg" class="muted">Loading…</div>
 
+      <!-- MAIN LIST (no ?item=) -->
+      <div id="listPanel" class="hidden">
+        <div class="muted">Tap an item to open its checkout page.</div>
+        <div id="list" class="list"></div>
+      </div>
+
+      <!-- ITEM PANEL (with ?item=UUID) -->
       <div id="itemPanel" class="hidden">
         <div><span class="pill" id="statusPill">—</span></div>
-        <h2 id="itemName" class="muted" style="margin:8px 0 0">—</h2>
+        <h2 id="itemName">—</h2>
         <div class="small">Renta ID: <span id="itemRenta">—</span></div>
 
         <div id="startForm">
-          <label>Namn</label>
-          <input id="fName" placeholder="t.ex. Andreas Pettersson" />
+          <label>Full name</label>
+          <input id="fName" placeholder="e.g. Andreas Pettersson" />
           <div class="row">
             <div>
-              <label>Telefon</label>
+              <label>Phone</label>
               <input id="fPhone" placeholder="070-..." />
             </div>
             <div>
-              <label>Företag (valfritt)</label>
-              <input id="fCompany" placeholder="Entreprenör AB" />
+              <label>Company (optional)</label>
+              <input id="fCompany" placeholder="Contractor AB" />
             </div>
           </div>
-          <label>Förväntad retur (valfritt)</label>
+          <label>Expected return (optional)</label>
           <input id="fExpected" type="date" />
-          <label>Notering (valfritt)</label>
-          <input id="fNote" placeholder="Var används?" />
+          <label>Note (optional)</label>
+          <input id="fNote" placeholder="Where used?" />
           <button id="btnStart">Start renting</button>
-          <div class="small">Namn/telefon sparas lokalt för snabbare nästa gång.</div>
+          <div class="small">Name/phone are cached locally for speed next time.</div>
         </div>
 
         <div id="returnForm" class="hidden">
-          <label>Foto (valfritt)</label>
+          <label>Photo (optional)</label>
           <input id="fPhoto" type="file" accept="image/*" capture="environment" />
-          <label>Notering (valfritt)</label>
-          <input id="fReturnNote" placeholder="Skick / var lämnat" />
+          <label>Note (optional)</label>
+          <input id="fReturnNote" placeholder="Condition / where left" />
           <button id="btnReturn">Returned</button>
         </div>
 
@@ -68,19 +89,17 @@
   </div>
 
 <script>
-  // === Supabase config (dina värden) ===
+  // === Supabase config ===
   const SUPABASE_URL = "https://rvsormwqumgbqhvvfsnw.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2c29ybXdxdW1nYnFodnZmc253Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTk1OTYsImV4cCI6MjA3NjU3NTU5Nn0.cfn9Y_M2u5D-lXFBDWLuDAMJ4P92whTFgjo8hLj-w-0";
-  const RETURNS_BUCKET = "returns"; // skapa gärna bucket med detta namn (public)
+  const RETURNS_BUCKET = "returns";
 
-  // Om scriptet laddats rätt ska window.supabase finnas här
   let sb = null;
   function ensureSupabaseReady(next){
     if (window.supabase) {
       sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       next();
     } else {
-      // fallback om nätet är segt
       setTimeout(()=>ensureSupabaseReady(next), 50);
     }
   }
@@ -91,6 +110,8 @@
 
   const el = {
     msg: qs("#msg"),
+    listPanel: qs("#listPanel"),
+    list: qs("#list"),
     itemPanel: qs("#itemPanel"),
     statusPill: qs("#statusPill"),
     itemName: qs("#itemName"),
@@ -120,10 +141,54 @@
     const v = { name: el.fName.value.trim(), phone: el.fPhone.value.trim(), company: el.fCompany.value.trim() };
     localStorage.setItem("stegra_identity", JSON.stringify(v));
   }
-  function statusBadge(s){
+  function setStatusBadge(s){
     el.statusPill.textContent = (s||"available").toUpperCase();
   }
+  function dotClass(status){
+    return status === 'available' ? 'green' : (status === 'out' ? 'red' : 'gray');
+  }
 
+  // -------- LIST VIEW ----------
+  async function fetchAllItems(){
+    const { data, error } = await sb.from("items").select("*").order("created_at", { ascending: false });
+    if(error) throw error;
+    return data || [];
+  }
+  function renderList(items){
+    el.list.innerHTML = "";
+    if(!items.length){ el.list.innerHTML = '<div class="muted">No items yet.</div>'; return; }
+    for (const it of items){
+      const row = document.createElement('div');
+      row.className = 'li';
+      const statusDot = `<span class="dot ${dotClass(it.status)}"></span>`;
+      const name = `<a class="itemlink" href="?item=${it.id}"><strong>${it.name}</strong></a>`;
+      const renta = `<div class="small muted">Renta ID: ${it.renta_asset_code || '—'}</div>`;
+      row.innerHTML = `
+        ${statusDot}
+        <div>
+          ${name}
+          ${renta}
+        </div>
+        <div class="right small muted">${(it.status||'available').toUpperCase()}</div>
+      `;
+      el.list.appendChild(row);
+    }
+  }
+  async function showList(){
+    el.itemPanel.classList.add('hidden');
+    el.listPanel.classList.remove('hidden');
+    el.msg.textContent = "Loading…";
+    try{
+      const items = await fetchAllItems();
+      renderList(items);
+      el.msg.textContent = "";
+    }catch(e){
+      console.error(e);
+      el.msg.textContent = "Could not load items.";
+    }
+  }
+
+  // -------- ITEM VIEW ----------
   async function fetchItem(id){
     const { data, error } = await sb.from("items").select("*").eq("id", id).single();
     if(error) throw error;
@@ -138,14 +203,13 @@
     if(!file) return null;
     const key = `${crypto.randomUUID()}-${file.name.replace(/\s+/g,'_')}`;
     const { error } = await sb.storage.from(RETURNS_BUCKET).upload(key, file, { upsert:false });
-    if(error) { console.warn(error); return null; }
+    if(error){ console.warn(error); return null; }
     const { data: pub } = sb.storage.from(RETURNS_BUCKET).getPublicUrl(key);
     return pub?.publicUrl || null;
   }
-
   async function startRental(item){
     const user_name = el.fName.value.trim();
-    if(!user_name){ el.msg.textContent = "Fyll i namn."; return; }
+    if(!user_name){ el.msg.textContent = "Please enter your name."; return; }
     const payload = {
       item_id: item.id,
       user_name,
@@ -155,56 +219,59 @@
       note: el.fNote.value.trim() || null
     };
     const { error } = await sb.from("rentals").insert(payload);
-    if(error){ el.msg.textContent = "Kunde inte starta utlån."; console.error(error); return; }
+    if(error){ el.msg.textContent = "Could not start rental."; console.error(error); return; }
     saveIdentity();
     await sb.from("items").update({ status:"out" }).eq("id", item.id);
-    el.msg.textContent = "Utlånad ✔";
-    render(item.id);
+    el.msg.textContent = "Checked out ✔";
+    renderItem(item.id);
   }
-
   async function returnRental(item, rental){
     let photoUrl = null;
     if(el.fPhoto.files && el.fPhoto.files[0]) photoUrl = await uploadPhoto(el.fPhoto.files[0]);
     const note = el.fReturnNote.value.trim() || null;
     const { error } = await sb.from("rentals").update({ return_at: new Date().toISOString(), return_photo_url: photoUrl, note }).eq("id", rental.id);
-    if(error){ el.msg.textContent = "Kunde inte lämna tillbaka."; console.error(error); return; }
+    if(error){ el.msg.textContent = "Could not complete return."; console.error(error); return; }
     await sb.from("items").update({ status:"available" }).eq("id", item.id);
-    el.msg.textContent = "Återlämnad ✔";
-    render(item.id);
+    el.msg.textContent = "Returned ✔";
+    renderItem(item.id);
   }
-
-  async function render(id){
-    if(!id){ el.msg.innerHTML = 'Ingen pryl vald. Lägg till <code>?item=&lt;UUID&gt;</code> i URL:en.'; return; }
-    el.msg.textContent = "Laddar…";
+  async function renderItem(id){
+    el.listPanel.classList.add('hidden');
+    el.itemPanel.classList.remove('hidden');
+    el.msg.textContent = "Loading…";
     try{
       const item = await fetchItem(id);
-      statusBadge(item.status);
+      setStatusBadge(item.status);
       el.itemName.textContent = item.name;
       el.itemRenta.textContent = item.renta_asset_code || "—";
-      el.itemPanel.classList.remove("hidden");
       loadIdentity();
 
       const active = await getActiveRental(item.id);
       if(active){
         el.startForm.classList.add("hidden");
         el.returnForm.classList.remove("hidden");
-        el.info.textContent = `Utlånad till ${active.user_name} sedan ${new Date(active.start_at).toLocaleString()}`;
+        el.info.textContent = `Checked out by ${active.user_name} since ${new Date(active.start_at).toLocaleString()}`;
         el.btnReturn.onclick = () => returnRental(item, active);
       } else {
         el.returnForm.classList.add("hidden");
         el.startForm.classList.remove("hidden");
-        el.info.textContent = "Prylen är tillgänglig.";
+        el.info.textContent = "This item is available.";
         el.btnStart.onclick = () => startRental(item);
       }
       el.msg.textContent = "";
     }catch(e){
       console.error(e);
-      el.msg.textContent = "Pryl hittades inte. Kontrollera UUID.";
+      el.msg.textContent = "Item not found. Check the UUID.";
     }
   }
 
-  // Starta när sidan laddat OCH supabase finns
-  window.addEventListener("load", ()=> ensureSupabaseReady(()=> render(ITEM_ID)));
+  // Router
+  window.addEventListener("load", ()=> {
+    ensureSupabaseReady(()=> {
+      if (p.get("item")) renderItem(p.get("item"));
+      else showList();
+    });
+  });
 </script>
 </body>
 </html>
