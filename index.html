@@ -5,86 +5,80 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Stegra – NFC Rentals</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f7fb;
-    --panel:#ffffff;
-    --text:#111827;
-    --muted:#6b7280;
-    --line:#e5e7eb;
-    --ring:rgba(59,130,246,.35);
-    --chip:#fff;
-    --chip-border:#e5e7eb;
-    --chip-hover:#f9fafb;
-    --chip-active:#eef2ff;
-    --chip-active-border:#c7d2fe;
-    --chip-active-text:#3730a3;
-    --success:#22c55e;
-    --danger:#ef4444;
+    --bg:#f6f7fb; --panel:#ffffff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
+    --ring:rgba(59,130,246,.35); --chip:#fff; --chip-border:#e5e7eb; --chip-hover:#f9fafb;
+    --chip-active:#eef2ff; --chip-active-border:#c7d2fe; --chip-active-text:#3730a3;
+    --success:#22c55e; --danger:#ef4444;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue","Noto Sans",Arial,"Apple Color Emoji","Segoe UI Emoji";
-  }
-  .shell{max-width:1120px; margin:24px auto; padding:0 16px;}
-  header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;}
-  .brand{font-weight:800; font-size:28px; letter-spacing:.2px}
-  .link{color:#2563eb; text-decoration:none; font-weight:600}
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue","Noto Sans",Arial}
+  .shell{max-width:1120px; margin:24px auto; padding:0 16px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px}
+  .brand{font-weight:800; font-size:34px; letter-spacing:.2px}
+  .link{color:#2563eb; text-decoration:none; font-weight:700}
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,.04)}
 
   /* Search */
   .search-wrap{margin-bottom:14px}
-  .search{
-    width:100%; border:1px solid var(--line); background:#fff; border-radius:12px;
-    padding:14px 14px; font-size:16px; outline:0;
-  }
+  .search{width:100%; border:1px solid var(--line); background:#fff; border-radius:12px; padding:14px; font-size:16px; outline:0}
   .search:focus{box-shadow:0 0 0 3px var(--ring)}
 
   /* Filters */
   .filters-container{ position:sticky; top:0; z-index:30; padding:8px 0 10px; background:linear-gradient(#f6f7fb 50%, rgba(246,247,251,0)); }
   .filter-bar{ display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
   .filter-chip{
-    display:inline-flex; align-items:center; gap:.5rem;
-    padding:.55rem 1rem; border-radius:9999px;
-    border:1px solid var(--chip-border);
-    background:var(--chip); color:var(--text);
-    box-shadow:0 1px 2px rgba(0,0,0,.04); cursor:pointer; user-select:none;
-    font-weight:600;
+    display:inline-flex; align-items:center; gap:.5rem; padding:.55rem 1rem; border-radius:9999px;
+    border:1px solid var(--chip-border); background:var(--chip); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.04);
+    cursor:pointer; user-select:none; font-weight:700;
   }
-  .filter-chip:hover{ background:var(--chip-hover); }
-  .filter-chip.is-active{ background:var(--chip-active); border-color:var(--chip-active-border); color:var(--chip-active-text); }
-  .btn-clear{
-    display:inline-flex; align-items:center; gap:.5rem;
-    padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--chip-border);
-    background:#fff; color:var(--text); font-weight:600; cursor:pointer;
+  .filter-chip:hover{ background:var(--chip-hover) }
+  .filter-chip.is-active{ background:var(--chip-active); border-color:var(--chip-active-border); color:var(--chip-active-text) }
+  .filter-chip[aria-disabled="true"]{ opacity:.45; cursor:not-allowed }
+  .btn-clear,.btn{
+    display:inline-flex; align-items:center; gap:.5rem; padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--chip-border);
+    background:#fff; color:var(--text); font-weight:700; cursor:pointer;
   }
-  .btn-clear:hover{ background:var(--chip-hover); }
-  .btn{border:1px solid var(--chip-border); background:#fff; padding:.6rem .9rem; border-radius:10px; cursor:pointer; font-weight:600}
-  .btn:hover{background:var(--chip-hover)}
-  .btn:focus-visible,.filter-chip:focus-visible,.btn-clear:focus-visible{outline:0; box-shadow:0 0 0 3px var(--ring)}
+  .btn-clear:hover,.btn:hover{ background:var(--chip-hover) }
+  .btn:focus-visible,.btn-clear:focus-visible,.filter-chip:focus-visible{outline:0; box-shadow:0 0 0 3px var(--ring)}
 
   /* List */
   .grid{ display:grid; gap:14px; }
   @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr; } }
   .card{
     background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px;
-    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px; transition:transform .05s ease, box-shadow .1s ease;
+    cursor:pointer;
   }
+  .card:hover{ transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.06) }
   .left{display:flex; align-items:flex-start; gap:12px; min-width:0}
   .dot{width:10px; height:10px; border-radius:9999px; margin-top:.45rem}
-  .dot.green{ background:var(--success); }
-  .dot.red{ background:var(--danger); }
+  .dot.green{ background:var(--success) } .dot.red{ background:var(--danger) }
   .title{font-weight:800; color:#1d4ed8; margin:0 0 2px; font-size:18px; word-break:break-word}
   .meta{color:var(--muted); font-size:14px}
-  .status{font-weight:700; font-size:14px; color:#374151; min-width:96px; text-align:right}
-  .tag{color:#6b7280}
+  .status{font-weight:800; font-size:14px; color:#374151; min-width:96px; text-align:right}
   .right{display:flex; align-items:center; gap:10px}
-  .small{font-size:12px; color:var(--muted)}
-  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; margin:10px 0 6px; }
+  .small{font-size:12px; color:var(--muted)} .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; margin:10px 0 6px }
   .muted{color:var(--muted)}
+
+  /* Empty */
+  .empty{padding:28px; text-align:center; color:var(--muted)}
+  .chip-count{font-weight:700; font-size:12px; padding:.1rem .5rem; border-radius:9999px; background:#eef2ff; color:#3730a3}
+
+  /* Modal */
+  .modal{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:none; align-items:center; justify-content:center; padding:16px }
+  .modal.show{ display:flex }
+  .dialog{ width:100%; max-width:520px; background:#fff; border-radius:16px; border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:18px }
+  .dialog h3{ margin:0 0 6px; font-size:20px }
+  .dialog .row{ display:flex; gap:10px; align-items:center; margin:10px 0 }
+  .dialog label{ font-weight:700; font-size:14px }
+  .input{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; outline:0 }
+  .input:focus{ box-shadow:0 0 0 3px var(--ring) }
+  .dialog .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px }
+  .btn-primary{ background:#1d4ed8; color:#fff; border-color:#1d4ed8 }
+  .btn-primary:hover{ filter:brightness(0.95) }
 </style>
 </head>
 <body>
@@ -116,6 +110,33 @@
 
       <!-- Items -->
       <div class="grid" id="itemsGrid"></div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="empty" style="display:none">No items found for this view.</div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="dialog">
+      <h3 id="dlgTitle">Item</h3>
+      <div class="small muted" id="dlgMeta"></div>
+
+      <div id="borrowBlock" style="display:none">
+        <div class="row">
+          <label for="borrower" style="min-width:120px">Borrowed by</label>
+          <input id="borrower" class="input" placeholder="Name / company / badge" />
+        </div>
+      </div>
+
+      <div id="returnBlock" class="small" style="display:none">
+        This item is currently OUT. Click <b>Return</b> to mark it as available.
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="dlgCancel" type="button">Close</button>
+        <button class="btn btn-primary" id="dlgPrimary" type="button">Save</button>
+      </div>
     </div>
   </div>
 
@@ -137,78 +158,75 @@ const items = [
     category:"Vehicles & Lifts",
     rentaId:"RENT-310",
     available:true,
-    loanHistory:[
-      { itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }
-    ]
+    loanHistory:[{ itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }]
   },
-  {
-    id:"rent-311",
-    name:"Forklift 3.5t",
-    category:"Vehicles & Lifts",
-    rentaId:"RENT-311",
-    available:true,
-    loanHistory:[
-      { itemId:"rent-311", itemName:"Forklift 3.5t", borrowedBy:"Sara Lind", borrowedAt:"2025-10-12 07:55", returnedAt:"2025-10-12 15:02" }
-    ]
-  },
-  {
-    id:"rent-1",
-    name:"Scissor Lift 01",
-    category:"Vehicles & Lifts",
-    rentaId:"RENT-1",
-    available:true,
-    loanHistory:[]
-  },
-  {
-    id:"rent-202",
-    name:"Scissor Lift 02",
-    category:"Vehicles & Lifts",
-    rentaId:"RENT-202",
-    available:false,
-    loanHistory:[
-      { itemId:"rent-202", itemName:"Scissor Lift 02", borrowedBy:"Jonas Olsson", borrowedAt:"2025-10-22 09:10", returnedAt:"" }
-    ]
-  },
-  {
-    id:"pow-77",
-    name:"Hilti TE 70-ATC Hammer",
-    category:"Power Tools",
-    rentaId:"RENT-77",
-    available:true,
-    loanHistory:[
-      { itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }
-    ]
-  }
+  { id:"rent-311", name:"Forklift 3.5t", category:"Vehicles & Lifts", rentaId:"RENT-311", available:true,
+    loanHistory:[{ itemId:"rent-311", itemName:"Forklift 3.5t", borrowedBy:"Sara Lind", borrowedAt:"2025-10-12 07:55", returnedAt:"2025-10-12 15:02" }] },
+  { id:"rent-1", name:"Scissor Lift 01", category:"Vehicles & Lifts", rentaId:"RENT-1", available:true, loanHistory:[] },
+  { id:"rent-202", name:"Scissor Lift 02", category:"Vehicles & Lifts", rentaId:"RENT-202", available:false,
+    loanHistory:[{ itemId:"rent-202", itemName:"Scissor Lift 02", borrowedBy:"Jonas Olsson", borrowedAt:"2025-10-22 09:10", returnedAt:"" }] },
+  { id:"pow-77", name:"Hilti TE 70-ATC Hammer", category:"Power Tools", rentaId:"RENT-77", available:true,
+    loanHistory:[{ itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }] },
+  // intentionally leaving categories like Lighting/Electrical empty to show empty-state & counts
 ];
 
 /* -------------------- State -------------------- */
-let activeCategory = "";  // one-at-a-time filter for simplicity
+let activeCategory = "";
 let searchTerm = "";
+let dialogItem = null;
 
-/* -------------------- DOM refs -------------------- */
+/* -------------------- DOM -------------------- */
 const filterBar = document.getElementById("filterBar");
 const itemsGrid = document.getElementById("itemsGrid");
 const clearBtn  = document.getElementById("clearFilters");
 const searchEl  = document.getElementById("search");
 const resultCountEl = document.getElementById("resultCount");
 const exportCsvAllBtn = document.getElementById("exportCsvAll");
+const emptyState = document.getElementById("emptyState");
 
-/* -------------------- Filters UI -------------------- */
+/* Modal refs */
+const modal = document.getElementById("modal");
+const dlgTitle = document.getElementById("dlgTitle");
+const dlgMeta = document.getElementById("dlgMeta");
+const dlgPrimary = document.getElementById("dlgPrimary");
+const dlgCancel = document.getElementById("dlgCancel");
+const borrowBlock = document.getElementById("borrowBlock");
+const returnBlock = document.getElementById("returnBlock");
+const borrowerInput = document.getElementById("borrower");
+
+/* -------------------- Utils -------------------- */
+function nowString(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function stop(e){ e.preventDefault(); e.stopPropagation(); }
+
+/* -------------------- Filters -------------------- */
+function countByCategory(){
+  const map = new Map(CATEGORIES.map(c=>[c,0]));
+  items.forEach(i => map.set(i.category, (map.get(i.category)||0)+1));
+  return map;
+}
 function renderChips(){
-  // Insert chips before the clear/export buttons
+  // remove existing chips (keep clear/export buttons at the end)
+  [...filterBar.querySelectorAll('.filter-chip')].forEach(n=>n.remove());
   const beforeNode = document.getElementById("clearFilters");
+  const counts = countByCategory();
   CATEGORIES.forEach(cat=>{
     const b = document.createElement("button");
     b.type = "button";
     b.className = "filter-chip";
-    b.textContent = cat;
     b.dataset.cat = cat;
+    b.innerHTML = `${cat} <span class="chip-count">${counts.get(cat)||0}</span>`;
+    const zero = (counts.get(cat) || 0) === 0;
+    if (zero){ b.setAttribute('aria-disabled','true'); }
     b.addEventListener("click", ()=>{
-      // toggle single-select
-      if (activeCategory === cat) {
-        activeCategory = "";
-      } else {
+      if (b.getAttribute('aria-disabled') === 'true') {
+        // allow click to still filter to empty view (optional). If you want to block, just return.
         activeCategory = cat;
+      } else {
+        activeCategory = (activeCategory === cat) ? "" : cat;
       }
       document.querySelectorAll(".filter-chip").forEach(ch=>ch.classList.toggle("is-active", ch.dataset.cat === activeCategory && activeCategory!==""));
       renderList();
@@ -216,42 +234,21 @@ function renderChips(){
     filterBar.insertBefore(b, beforeNode);
   });
 }
-renderChips();
-
-clearBtn.addEventListener("click", ()=>{
-  activeCategory = ""; searchTerm = "";
-  document.querySelectorAll(".filter-chip").forEach(b=>b.classList.remove("is-active"));
-  searchEl.value = "";
-  renderList();
-});
-
-searchEl.addEventListener("input", (e)=>{
-  searchTerm = (e.target.value || "").trim().toLowerCase();
-  renderList();
-});
 
 /* -------------------- CSV helpers -------------------- */
 function toCsv(rows){
   if (!rows.length) return "";
   const headers = Object.keys(rows[0]);
   const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const lines = [
-    headers.map(esc).join(","),
-    ...rows.map(r => headers.map(h => esc(r[h])).join(","))
-  ];
+  const lines = [ headers.map(esc).join(","), ...rows.map(r => headers.map(h => esc(r[h])).join(",")) ];
   return lines.join("\n");
 }
 function download(filename, text){
   const blob = new Blob([text], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
-
 exportCsvAllBtn.addEventListener("click", ()=>{
   const allLoans = items.flatMap(i => i.loanHistory);
   if (!allLoans.length){ alert("No loans to export yet."); return; }
@@ -270,6 +267,7 @@ function matches(item){
 function card(item){
   const el = document.createElement("div");
   el.className = "card";
+  el.addEventListener('click', ()=> openItemDialog(item)); // <— klick öppnar modal
 
   const left = document.createElement("div");
   left.className = "left";
@@ -278,53 +276,100 @@ function card(item){
   const textWrap = document.createElement("div");
 
   const title = document.createElement("h3");
-  title.className = "title";
-  title.textContent = item.name;
+  title.className = "title"; title.textContent = item.name;
 
   const meta = document.createElement("div");
   meta.className = "meta";
-  meta.innerHTML = `<span class="tag">${item.category}</span> · Renta ID: ${item.rentaId}`;
+  meta.innerHTML = `<span>${item.category}</span> · Renta ID: ${item.rentaId}`;
 
-  textWrap.appendChild(title);
-  textWrap.appendChild(meta);
-  left.appendChild(dot);
-  left.appendChild(textWrap);
+  textWrap.appendChild(title); textWrap.appendChild(meta);
+  left.appendChild(dot); left.appendChild(textWrap);
 
   const right = document.createElement("div");
   right.className = "right";
-
   const status = document.createElement("div");
-  status.className = "status";
-  status.textContent = item.available ? "AVAILABLE" : "OUT";
+  status.className = "status"; status.textContent = item.available ? "AVAILABLE" : "OUT";
   right.appendChild(status);
 
   const csvBtn = document.createElement("button");
-  csvBtn.className = "btn";
-  csvBtn.type = "button";
-  csvBtn.textContent = "Loans CSV";
-  csvBtn.title = "Download CSV for this item";
-  csvBtn.addEventListener("click", ()=>{
-    if (!item.loanHistory.length){ alert("No loans to export for this item."); return; }
-    download(`loans_${item.id}.csv`, toCsv(item.loanHistory));
-  });
+  csvBtn.className = "btn"; csvBtn.type = "button"; csvBtn.textContent = "Loans CSV"; csvBtn.title = "Download CSV for this item";
+  csvBtn.addEventListener("click", (e)=>{ stop(e); if (!item.loanHistory.length){ alert("No loans to export for this item."); return; } download(`loans_${item.id}.csv`, toCsv(item.loanHistory)); });
   right.appendChild(csvBtn);
 
-  el.appendChild(left);
-  el.appendChild(right);
+  el.appendChild(left); el.appendChild(right);
   return el;
 }
 
 function renderList(){
+  renderChips();
   itemsGrid.innerHTML = "";
   const list = items.filter(matches);
-  list.forEach(i => itemsGrid.appendChild(card(i)));
+  if (list.length === 0){
+    emptyState.style.display = "block";
+  } else {
+    emptyState.style.display = "none";
+    list.forEach(i => itemsGrid.appendChild(card(i)));
+  }
   resultCountEl.textContent = `${list.length} item${list.length===1?"":"s"} shown`;
 }
+
+searchEl.addEventListener("input", (e)=>{ searchTerm = (e.target.value || "").trim().toLowerCase(); renderList(); });
+clearBtn.addEventListener("click", ()=>{ activeCategory = ""; searchTerm = ""; searchEl.value = ""; renderList(); });
+
+/* -------------------- Modal: Borrow / Return -------------------- */
+function openItemDialog(item){
+  dialogItem = item;
+  dlgTitle.textContent = item.name;
+  dlgMeta.textContent = `${item.category} · Renta ID: ${item.rentaId}`;
+
+  borrowerInput.value = "";
+  if (item.available){
+    borrowBlock.style.display = "block";
+    returnBlock.style.display = "none";
+    dlgPrimary.textContent = "Borrow";
+  } else {
+    borrowBlock.style.display = "none";
+    returnBlock.style.display = "block";
+    dlgPrimary.textContent = "Return";
+  }
+  modal.classList.add("show");
+  borrowerInput.focus?.();
+}
+function closeDialog(){ modal.classList.remove("show"); dialogItem = null; }
+
+dlgCancel.addEventListener("click", closeDialog);
+modal.addEventListener("click", (e)=>{ if (e.target === modal) closeDialog(); });
+
+dlgPrimary.addEventListener("click", ()=>{
+  if (!dialogItem) return;
+
+  if (dialogItem.available){
+    const name = borrowerInput.value.trim();
+    if (!name){ alert("Please enter who is borrowing the item."); return; }
+    dialogItem.available = false;
+    dialogItem.loanHistory.push({
+      itemId: dialogItem.id,
+      itemName: dialogItem.name,
+      borrowedBy: name,
+      borrowedAt: nowString(),
+      returnedAt: ""
+    });
+  } else {
+    // Return: match last open loan
+    const lastOpen = [...dialogItem.loanHistory].reverse().find(l => !l.returnedAt);
+    if (lastOpen){ lastOpen.returnedAt = nowString(); }
+    dialogItem.available = true;
+  }
+
+  closeDialog();
+  renderList();
+});
+
+/* -------------------- Init -------------------- */
 renderList();
 
-/* -------------------- (OPTIONAL) integrate with Supabase later --------------------
-   - Replace the static 'items' with data from your DB.
-   - Keep same field names for drop-in rendering, or map to them.
+/* -------------------- (OPTIONAL) Supabase integration later --------------------
+   Replace in-memory 'items' with DB rows; keep same field names or map to them.
 ------------------------------------------------------------------------------- */
 </script>
 </body>
