@@ -1,392 +1,331 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stegra – NFC Rentals</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stegra – NFC Rentals</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --panel:#ffffff;
+    --text:#111827;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --ring:rgba(59,130,246,.35);
+    --chip:#fff;
+    --chip-border:#e5e7eb;
+    --chip-hover:#f9fafb;
+    --chip-active:#eef2ff;
+    --chip-active-border:#c7d2fe;
+    --chip-active-text:#3730a3;
+    --success:#22c55e;
+    --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue","Noto Sans",Arial,"Apple Color Emoji","Segoe UI Emoji";
+  }
+  .shell{max-width:1120px; margin:24px auto; padding:0 16px;}
+  header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;}
+  .brand{font-weight:800; font-size:28px; letter-spacing:.2px}
+  .link{color:#2563eb; text-decoration:none; font-weight:600}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,.04)}
 
-  <!-- Supabase UMD (no defer) -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  /* Search */
+  .search-wrap{margin-bottom:14px}
+  .search{
+    width:100%; border:1px solid var(--line); background:#fff; border-radius:12px;
+    padding:14px 14px; font-size:16px; outline:0;
+  }
+  .search:focus{box-shadow:0 0 0 3px var(--ring)}
 
-  <style>
-    :root{
-      --bg:#f7f8fb; --fg:#0f172a; --muted:#64748b; --card:#ffffff; --border:#e2e8f0;
-      --primary:#0f62fe; --primary-dark:#0b4bcc; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444;
-      --chip:#f1f5f9; --chipb:#e2e8f0;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif}
-    .wrap{max-width:980px;margin:0 auto;padding:20px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(2,6,23,0.04)}
-    h1{margin:0 0 6px;font-size:24px}
-    h2{margin:8px 0 2px;font-size:20px}
-    .muted{color:var(--muted)}
-    label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
-    input,button{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--fg);font-size:16px}
-    input:focus,button:focus{outline:2px solid #c7d2fe;outline-offset:1px}
-    button{cursor:pointer;background:var(--primary);border-color:var(--primary);color:#fff;margin-top:14px}
-    button:hover{background:var(--primary-dark)}
-    .ghost{background:#fff;border-color:var(--border);color:var(--fg)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .small{font-size:12px;color:var(--muted);margin-top:6px}
-    .hidden{display:none}
+  /* Filters */
+  .filters-container{ position:sticky; top:0; z-index:30; padding:8px 0 10px; background:linear-gradient(#f6f7fb 50%, rgba(246,247,251,0)); }
+  .filter-bar{ display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+  .filter-chip{
+    display:inline-flex; align-items:center; gap:.5rem;
+    padding:.55rem 1rem; border-radius:9999px;
+    border:1px solid var(--chip-border);
+    background:var(--chip); color:var(--text);
+    box-shadow:0 1px 2px rgba(0,0,0,.04); cursor:pointer; user-select:none;
+    font-weight:600;
+  }
+  .filter-chip:hover{ background:var(--chip-hover); }
+  .filter-chip.is-active{ background:var(--chip-active); border-color:var(--chip-active-border); color:var(--chip-active-text); }
+  .btn-clear{
+    display:inline-flex; align-items:center; gap:.5rem;
+    padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--chip-border);
+    background:#fff; color:var(--text); font-weight:600; cursor:pointer;
+  }
+  .btn-clear:hover{ background:var(--chip-hover); }
+  .btn{border:1px solid var(--chip-border); background:#fff; padding:.6rem .9rem; border-radius:10px; cursor:pointer; font-weight:600}
+  .btn:hover{background:var(--chip-hover)}
+  .btn:focus-visible,.filter-chip:focus-visible,.btn-clear:focus-visible{outline:0; box-shadow:0 0 0 3px var(--ring)}
 
-    /* List styles */
-    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}
-    .chip{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--chipb);background:var(--chip);border-radius:999px;font-size:14px;cursor:pointer}
-    .chip.active{background:#e0ecff;border-color:#cfe0ff}
-    .list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width:720px){ .list{grid-template-columns:1fr;} }
-    .li{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff}
-    .right{margin-left:auto;text-align:right}
-    .dot{width:12px;height:12px;border-radius:999px;display:inline-block}
-    .green{background:var(--ok)} .red{background:var(--bad)} .gray{background:#94a3b8}
-    a.itemlink{color:var(--primary);text-decoration:none}
-    .pill{display:inline-block;padding:5px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;background:#f8fafc}
-    .back{background:#fff;border-color:var(--border);color:var(--fg)}
-    .section{margin-top:8px;margin-bottom:8px}
-    .hdr{display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:8px}
-    .hdr h2{margin:0}
-    .sep{height:1px;background:var(--border);margin:12px 0}
-  </style>
+  /* List */
+  .grid{ display:grid; gap:14px; }
+  @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr; } }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+  }
+  .left{display:flex; align-items:flex-start; gap:12px; min-width:0}
+  .dot{width:10px; height:10px; border-radius:9999px; margin-top:.45rem}
+  .dot.green{ background:var(--success); }
+  .dot.red{ background:var(--danger); }
+  .title{font-weight:800; color:#1d4ed8; margin:0 0 2px; font-size:18px; word-break:break-word}
+  .meta{color:var(--muted); font-size:14px}
+  .status{font-weight:700; font-size:14px; color:#374151; min-width:96px; text-align:right}
+  .tag{color:#6b7280}
+  .right{display:flex; align-items:center; gap:10px}
+  .small{font-size:12px; color:var(--muted)}
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; margin:10px 0 6px; }
+  .muted{color:var(--muted)}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="hdr">
-        <h1>Stegra – NFC Rentals</h1>
-        <span id="adminLink" class="small muted" style="margin-left:auto"></span>
-      </div>
-      <div id="msg" class="muted">Loading…</div>
+  <div class="shell">
+    <header>
+      <div class="brand">Stegra – NFC Rentals</div>
+      <a href="#" class="link">Home</a>
+    </header>
 
-      <!-- MAIN LIST -->
-      <div id="listPanel" class="hidden">
-        <div class="toolbar">
-          <input id="search" placeholder="Search items…" style="max-width:260px" />
-          <div id="chips" class="section"></div>
-          <button id="clearFilter" class="ghost" style="width:auto">Clear filters</button>
-        </div>
-        <div id="list" class="list"></div>
+    <div class="panel">
+      <!-- Search -->
+      <div class="search-wrap">
+        <input id="search" class="search" placeholder="Search items…" autocomplete="off" />
       </div>
 
-      <!-- ITEM PANEL -->
-      <div id="itemPanel" class="hidden">
-        <div><span class="pill" id="statusPill">—</span></div>
-        <h2 id="itemName">—</h2>
-        <div class="small">Category: <span id="itemCat">—</span> · Renta ID: <span id="itemRenta">—</span></div>
-
-        <div class="sep"></div>
-
-        <div id="startForm">
-          <label>Full name</label>
-          <input id="fName" placeholder="e.g. Andreas Pettersson" />
-          <div class="row">
-            <div>
-              <label>Phone</label>
-              <input id="fPhone" placeholder="070-..." />
-            </div>
-            <div>
-              <label>Company (optional)</label>
-              <input id="fCompany" placeholder="Contractor AB" />
-            </div>
-          </div>
-          <label>Expected return (optional)</label>
-          <input id="fExpected" type="date" />
-          <label>Note (optional)</label>
-          <input id="fNote" placeholder="Where used?" />
-          <button id="btnStart">Start renting</button>
-          <div class="small">Name/phone are cached locally for speed next time.</div>
+      <!-- Filters -->
+      <div class="filters-container">
+        <div class="filter-bar" id="filterBar">
+          <!-- chips injected by JS -->
+          <button class="btn-clear" id="clearFilters" type="button">Clear filters</button>
+          <button class="btn" id="exportCsvAll" type="button" title="Download CSV of all loans">Download loans CSV</button>
         </div>
-
-        <div id="returnForm" class="hidden">
-          <label>Photo (optional)</label>
-          <input id="fPhoto" type="file" accept="image/*" capture="environment" />
-          <label>Note (optional)</label>
-          <input id="fReturnNote" placeholder="Condition / where left" />
-          <button id="btnReturn">Returned</button>
-        </div>
-
-        <div class="sep"></div>
-
-        <div class="row">
-          <button id="btnCsv" class="ghost">Download CSV history</button>
-          <button id="btnBack" class="back">← Back to list</button>
-        </div>
-
-        <div id="info" class="small" style="margin-top:8px"></div>
       </div>
+
+      <!-- List Toolbar -->
+      <div class="toolbar">
+        <span class="small muted" id="resultCount"></span>
+      </div>
+
+      <!-- Items -->
+      <div class="grid" id="itemsGrid"></div>
     </div>
   </div>
 
 <script>
-  // === Supabase config ===
-  const SUPABASE_URL = "https://rvsormwqumgbqhvvfsnw.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2c29ybXdxdW1nYnFodnZmc253Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTk1OTYsImV4cCI6MjA3NjU3NTU5Nn0.cfn9Y_M2u5D-lXFBDWLuDAMJ4P92whTFgjo8hLj-w-0";
-  const RETURNS_BUCKET = "returns";
+/* -------------------- Data (example set) -------------------- */
+const CATEGORIES = [
+  "Vehicles & Lifts",
+  "Power Tools",
+  "Lighting",
+  "Electrical",
+  "Batteries & Chargers",
+  "Site Equipment"
+];
 
-  let sb = null;
-  function ensureSupabaseReady(next){
-    if (window.supabase) { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); next(); }
-    else setTimeout(()=>ensureSupabaseReady(next), 50);
+const items = [
+  {
+    id:"rent-310",
+    name:"Boom Lift 16m",
+    category:"Vehicles & Lifts",
+    rentaId:"RENT-310",
+    available:true,
+    loanHistory:[
+      { itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }
+    ]
+  },
+  {
+    id:"rent-311",
+    name:"Forklift 3.5t",
+    category:"Vehicles & Lifts",
+    rentaId:"RENT-311",
+    available:true,
+    loanHistory:[
+      { itemId:"rent-311", itemName:"Forklift 3.5t", borrowedBy:"Sara Lind", borrowedAt:"2025-10-12 07:55", returnedAt:"2025-10-12 15:02" }
+    ]
+  },
+  {
+    id:"rent-1",
+    name:"Scissor Lift 01",
+    category:"Vehicles & Lifts",
+    rentaId:"RENT-1",
+    available:true,
+    loanHistory:[]
+  },
+  {
+    id:"rent-202",
+    name:"Scissor Lift 02",
+    category:"Vehicles & Lifts",
+    rentaId:"RENT-202",
+    available:false,
+    loanHistory:[
+      { itemId:"rent-202", itemName:"Scissor Lift 02", borrowedBy:"Jonas Olsson", borrowedAt:"2025-10-22 09:10", returnedAt:"" }
+    ]
+  },
+  {
+    id:"pow-77",
+    name:"Hilti TE 70-ATC Hammer",
+    category:"Power Tools",
+    rentaId:"RENT-77",
+    available:true,
+    loanHistory:[
+      { itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }
+    ]
   }
+];
 
-  const qs = s => document.querySelector(s);
-  const p = new URLSearchParams(location.search);
-  const ITEM_ID = p.get("item");
+/* -------------------- State -------------------- */
+let activeCategory = "";  // one-at-a-time filter for simplicity
+let searchTerm = "";
 
-  const el = {
-    msg: qs("#msg"),
-    listPanel: qs("#listPanel"),
-    list: qs("#list"),
-    chips: qs("#chips"),
-    search: qs("#search"),
-    clearFilter: qs("#clearFilter"),
-    adminLink: qs("#adminLink"),
+/* -------------------- DOM refs -------------------- */
+const filterBar = document.getElementById("filterBar");
+const itemsGrid = document.getElementById("itemsGrid");
+const clearBtn  = document.getElementById("clearFilters");
+const searchEl  = document.getElementById("search");
+const resultCountEl = document.getElementById("resultCount");
+const exportCsvAllBtn = document.getElementById("exportCsvAll");
 
-    itemPanel: qs("#itemPanel"),
-    statusPill: qs("#statusPill"),
-    itemName: qs("#itemName"),
-    itemCat: qs("#itemCat"),
-    itemRenta: qs("#itemRenta"),
-    startForm: qs("#startForm"),
-    returnForm: qs("#returnForm"),
-    info: qs("#info"),
-    btnBack: qs("#btnBack"),
-    btnCsv: qs("#btnCsv"),
-
-    fName: qs("#fName"),
-    fPhone: qs("#fPhone"),
-    fCompany: qs("#fCompany"),
-    fExpected: qs("#fExpected"),
-    fNote: qs("#fNote"),
-    fPhoto: qs("#fPhoto"),
-    fReturnNote: qs("#fReturnNote"),
-    btnStart: qs("#btnStart"),
-    btnReturn: qs("#btnReturn")
-  };
-
-  // Navigation
-  el.btnBack.onclick = () => { location.href = location.origin + location.pathname; };
-
-  function loadIdentity(){
-    try{ const v = JSON.parse(localStorage.getItem("stegra_identity")||"{}");
-      el.fName.value = v.name||""; el.fPhone.value = v.phone||""; el.fCompany.value = v.company||"";
-    }catch{}
-  }
-  function saveIdentity(){
-    const v = { name: el.fName.value.trim(), phone: el.fPhone.value.trim(), company: el.fCompany.value.trim() };
-    localStorage.setItem("stegra_identity", JSON.stringify(v));
-  }
-  function setStatusBadge(s){
-    el.statusPill.textContent = (s||"available").toUpperCase();
-  }
-  function dotClass(status){ return status==='available'?'green':(status==='out'?'red':'gray'); }
-
-  // -------- LIST VIEW ----------
-  let allItems = [];
-  let activeCat = null;
-
-  const SUGGESTED_CATS = [
-    'Vehicles & Lifts','Power Tools','Lighting','Electrical','Batteries & Chargers','Site Equipment'
-  ];
-
-  function renderChips(distinctCats){
-    const cats = Array.from(new Set([ ...SUGGESTED_CATS, ...distinctCats.filter(Boolean) ]));
-    el.chips.innerHTML = '';
-    cats.forEach(cat=>{
-      const b = document.createElement('button');
-      b.className = 'chip' + (activeCat===cat?' active':'');
-      b.textContent = cat;
-      b.onclick = ()=>{ activeCat = activeCat===cat?null:cat; renderListFiltered(); };
-      el.chips.appendChild(b);
-    });
-  }
-
-  async function fetchAllItems(){
-    const { data, error } = await sb.from("items").select("*").order("name", { ascending: true });
-    if(error) throw error;
-    return data || [];
-  }
-
-  function renderListFiltered(){
-    const q = el.search.value.toLowerCase().trim();
-    const filtered = allItems.filter(it=>{
-      const matchesCat = !activeCat || (it.category||'').toLowerCase() === activeCat.toLowerCase();
-      const hay = `${it.name} ${it.renta_asset_code||''} ${it.category||''}`.toLowerCase();
-      const matchesText = !q || hay.includes(q);
-      return matchesCat && matchesText;
-    });
-    renderList(filtered);
-  }
-
-  function renderList(items){
-    el.list.innerHTML = "";
-    if(!items.length){ el.list.innerHTML = '<div class="muted">No items found.</div>'; return; }
-    for (const it of items){
-      const row = document.createElement('div');
-      row.className = 'li';
-      const statusDot = `<span class="dot ${dotClass(it.status)}"></span>`;
-      const name = `<a class="itemlink" href="?item=${it.id}"><strong>${it.name}</strong></a>`;
-      const renta = `<div class="small muted">${it.category || 'Uncategorized'} · Renta ID: ${it.renta_asset_code || '—'}</div>`;
-      row.innerHTML = `
-        ${statusDot}
-        <div>
-          ${name}
-          ${renta}
-        </div>
-        <div class="right small muted">${(it.status||'available').toUpperCase()}</div>
-      `;
-      el.list.appendChild(row);
-    }
-  }
-
-  async function showList(){
-    el.itemPanel.classList.add('hidden');
-    el.listPanel.classList.remove('hidden');
-    el.msg.textContent = "Loading…";
-    try{
-      allItems = await fetchAllItems();
-      renderChips(allItems.map(i=>i.category));
-      renderList(allItems);
-      el.msg.textContent = "";
-    }catch(e){
-      console.error(e); el.msg.textContent = "Could not load items.";
-    }
-  }
-
-  el.search.addEventListener('input', renderListFiltered);
-  el.clearFilter.onclick = ()=>{
-    el.search.value=''; activeCat=null; renderListFiltered();
-  };
-
-  // -------- ITEM VIEW ----------
-  async function fetchItem(id){
-    const { data, error } = await sb.from("items").select("*").eq("id", id).single();
-    if(error) throw error;
-    return data;
-  }
-  async function getActiveRental(item_id){
-    const { data, error } = await sb.from("rentals").select("*").eq("item_id", item_id).is("return_at", null).maybeSingle();
-    if(error) throw error; return data;
-  }
-  async function uploadPhoto(file){
-    if(!file) return null;
-    const key = `${crypto.randomUUID()}-${file.name.replace(/\s+/g,'_')}`;
-    const { error } = await sb.storage.from(RETURNS_BUCKET).upload(key, file, { upsert:false });
-    if(error){ console.warn(error); return null; }
-    const { data: pub } = sb.storage.from(RETURNS_BUCKET).getPublicUrl(key);
-    return pub?.publicUrl || null;
-  }
-
-  async function startRental(item){
-    const user_name = el.fName.value.trim();
-    if(!user_name){ el.msg.textContent = "Please enter your name."; return; }
-    const payload = {
-      item_id: item.id,
-      user_name,
-      phone: el.fPhone.value.trim() || null,
-      company: el.fCompany.value.trim() || null,
-      expected_return: el.fExpected.value || null,
-      note: el.fNote.value.trim() || null
-    };
-    const { error } = await sb.from("rentals").insert(payload);
-    if(error){ el.msg.textContent = "Could not start rental."; console.error(error); return; }
-    saveIdentity();
-    await sb.from("items").update({ status:"out" }).eq("id", item.id);
-    el.msg.textContent = "Checked out ✔";
-    renderItem(item.id);
-  }
-  async function returnRental(item, rental){
-    let photoUrl = null;
-    if(el.fPhoto.files && el.fPhoto.files[0]) photoUrl = await uploadPhoto(el.fPhoto.files[0]);
-    const note = el.fReturnNote.value.trim() || null;
-    const { error } = await sb.from("rentals").update({ return_at: new Date().toISOString(), return_photo_url: photoUrl, note }).eq("id", rental.id);
-    if(error){ el.msg.textContent = "Could not complete return."; console.error(error); return; }
-    await sb.from("items").update({ status:"available" }).eq("id", item.id);
-    el.msg.textContent = "Returned ✔";
-    renderItem(item.id);
-  }
-
-  function toCSV(rows){
-    if(!rows.length) return '';
-    const headers = Object.keys(rows[0]);
-    const esc = (v)=>`"${String(v??'').replace(/"/g,'""')}"`;
-    return [headers.join(','), ...rows.map(r=> headers.map(h=> esc(r[h])).join(','))].join('\n');
-  }
-
-  async function downloadItemHistoryCSV(item){
-    // Fetch full rental history for this item
-    const { data, error } = await sb.from('rentals')
-      .select('*')
-      .eq('item_id', item.id)
-      .order('start_at', { ascending:false });
-    if(error){ el.msg.textContent = "CSV export failed."; console.error(error); return; }
-
-    const rows = (data||[]).map(r=>({
-      item_name: item.name,
-      category: item.category || '',
-      renta_asset_code: item.renta_asset_code || '',
-      user_name: r.user_name,
-      phone: r.phone || '',
-      company: r.company || '',
-      start_at: r.start_at,
-      return_at: r.return_at || '',
-      expected_return: r.expected_return || '',
-      note: r.note || '',
-      return_photo_url: r.return_photo_url || ''
-    }));
-
-    const csv = toCSV(rows);
-    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const safeName = item.name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
-    a.href = url; a.download = `rental_history_${safeName}.csv`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  }
-
-  async function renderItem(id){
-    el.listPanel.classList.add('hidden');
-    el.itemPanel.classList.remove('hidden');
-    el.msg.textContent = "Loading…";
-    try{
-      const item = await fetchItem(id);
-      setStatusBadge(item.status);
-      el.itemName.textContent = item.name;
-      el.itemRenta.textContent = item.renta_asset_code || "—";
-      el.itemCat.textContent = item.category || "Uncategorized";
-      loadIdentity();
-
-      const active = await getActiveRental(item.id);
-      if(active){
-        el.startForm.classList.add("hidden");
-        el.returnForm.classList.remove("hidden");
-        el.info.textContent = `Checked out by ${active.user_name} since ${new Date(active.start_at).toLocaleString()}`;
-        el.btnReturn.onclick = () => returnRental(item, active);
+/* -------------------- Filters UI -------------------- */
+function renderChips(){
+  // Insert chips before the clear/export buttons
+  const beforeNode = document.getElementById("clearFilters");
+  CATEGORIES.forEach(cat=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "filter-chip";
+    b.textContent = cat;
+    b.dataset.cat = cat;
+    b.addEventListener("click", ()=>{
+      // toggle single-select
+      if (activeCategory === cat) {
+        activeCategory = "";
       } else {
-        el.returnForm.classList.add("hidden");
-        el.startForm.classList.remove("hidden");
-        el.info.textContent = "This item is available.";
-        el.btnStart.onclick = () => startRental(item);
+        activeCategory = cat;
       }
-
-      // CSV history
-      el.btnCsv.onclick = () => downloadItemHistoryCSV(item);
-
-      el.msg.textContent = "";
-    }catch(e){
-      console.error(e); el.msg.textContent = "Item not found. Check the UUID.";
-    }
-  }
-
-  // Router
-  window.addEventListener("load", ()=> {
-    ensureSupabaseReady(()=> {
-      if (p.get("item")) renderItem(p.get("item"));
-      else showList();
-      el.adminLink.innerHTML = `<a href="${location.origin + location.pathname}" class="muted" style="text-decoration:none">Home</a>`;
+      document.querySelectorAll(".filter-chip").forEach(ch=>ch.classList.toggle("is-active", ch.dataset.cat === activeCategory && activeCategory!==""));
+      renderList();
     });
+    filterBar.insertBefore(b, beforeNode);
   });
+}
+renderChips();
+
+clearBtn.addEventListener("click", ()=>{
+  activeCategory = ""; searchTerm = "";
+  document.querySelectorAll(".filter-chip").forEach(b=>b.classList.remove("is-active"));
+  searchEl.value = "";
+  renderList();
+});
+
+searchEl.addEventListener("input", (e)=>{
+  searchTerm = (e.target.value || "").trim().toLowerCase();
+  renderList();
+});
+
+/* -------------------- CSV helpers -------------------- */
+function toCsv(rows){
+  if (!rows.length) return "";
+  const headers = Object.keys(rows[0]);
+  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const lines = [
+    headers.map(esc).join(","),
+    ...rows.map(r => headers.map(h => esc(r[h])).join(","))
+  ];
+  return lines.join("\n");
+}
+function download(filename, text){
+  const blob = new Blob([text], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+exportCsvAllBtn.addEventListener("click", ()=>{
+  const allLoans = items.flatMap(i => i.loanHistory);
+  if (!allLoans.length){ alert("No loans to export yet."); return; }
+  download("stegrarentals_loans.csv", toCsv(allLoans));
+});
+
+/* -------------------- Render list -------------------- */
+function matches(item){
+  const inCat = !activeCategory || item.category === activeCategory;
+  const s = searchTerm;
+  if (!s) return inCat;
+  const hay = `${item.name} ${item.category} ${item.rentaId}`.toLowerCase();
+  return inCat && hay.includes(s);
+}
+
+function card(item){
+  const el = document.createElement("div");
+  el.className = "card";
+
+  const left = document.createElement("div");
+  left.className = "left";
+  const dot = document.createElement("div");
+  dot.className = "dot " + (item.available ? "green" : "red");
+  const textWrap = document.createElement("div");
+
+  const title = document.createElement("h3");
+  title.className = "title";
+  title.textContent = item.name;
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerHTML = `<span class="tag">${item.category}</span> · Renta ID: ${item.rentaId}`;
+
+  textWrap.appendChild(title);
+  textWrap.appendChild(meta);
+  left.appendChild(dot);
+  left.appendChild(textWrap);
+
+  const right = document.createElement("div");
+  right.className = "right";
+
+  const status = document.createElement("div");
+  status.className = "status";
+  status.textContent = item.available ? "AVAILABLE" : "OUT";
+  right.appendChild(status);
+
+  const csvBtn = document.createElement("button");
+  csvBtn.className = "btn";
+  csvBtn.type = "button";
+  csvBtn.textContent = "Loans CSV";
+  csvBtn.title = "Download CSV for this item";
+  csvBtn.addEventListener("click", ()=>{
+    if (!item.loanHistory.length){ alert("No loans to export for this item."); return; }
+    download(`loans_${item.id}.csv`, toCsv(item.loanHistory));
+  });
+  right.appendChild(csvBtn);
+
+  el.appendChild(left);
+  el.appendChild(right);
+  return el;
+}
+
+function renderList(){
+  itemsGrid.innerHTML = "";
+  const list = items.filter(matches);
+  list.forEach(i => itemsGrid.appendChild(card(i)));
+  resultCountEl.textContent = `${list.length} item${list.length===1?"":"s"} shown`;
+}
+renderList();
+
+/* -------------------- (OPTIONAL) integrate with Supabase later --------------------
+   - Replace the static 'items' with data from your DB.
+   - Keep same field names for drop-in rendering, or map to them.
+------------------------------------------------------------------------------- */
 </script>
 </body>
 </html>
