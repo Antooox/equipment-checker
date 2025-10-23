@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stegra – NFC Rentals (MVP)</title>
-  <script defer src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+  <!-- Viktigt: INTE defer här, så window.supabase finns innan vår kod körs -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
   <style>
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:#0b1020;color:#ecf0ff}
     .wrap{max-width:640px;margin:0 auto;padding:20px}
@@ -70,10 +73,19 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2c29ybXdxdW1nYnFodnZmc253Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTk1OTYsImV4cCI6MjA3NjU3NTU5Nn0.cfn9Y_M2u5D-lXFBDWLuDAMJ4P92whTFgjo8hLj-w-0";
   const RETURNS_BUCKET = "returns"; // skapa gärna bucket med detta namn (public)
 
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const qs = s => document.querySelector(s);
-  const fmt = d => new Date(d).toLocaleString();
+  // Om scriptet laddats rätt ska window.supabase finnas här
+  let sb = null;
+  function ensureSupabaseReady(next){
+    if (window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      next();
+    } else {
+      // fallback om nätet är segt
+      setTimeout(()=>ensureSupabaseReady(next), 50);
+    }
+  }
 
+  const qs = s => document.querySelector(s);
   const p = new URLSearchParams(location.search);
   const ITEM_ID = p.get("item");
 
@@ -125,7 +137,7 @@
   async function uploadPhoto(file){
     if(!file) return null;
     const key = `${crypto.randomUUID()}-${file.name.replace(/\s+/g,'_')}`;
-    const { data, error } = await sb.storage.from(RETURNS_BUCKET).upload(key, file, { upsert:false });
+    const { error } = await sb.storage.from(RETURNS_BUCKET).upload(key, file, { upsert:false });
     if(error) { console.warn(error); return null; }
     const { data: pub } = sb.storage.from(RETURNS_BUCKET).getPublicUrl(key);
     return pub?.publicUrl || null;
@@ -191,9 +203,8 @@
     }
   }
 
-  window.addEventListener("load", ()=>{
-    render(ITEM_ID);
-  });
+  // Starta när sidan laddat OCH supabase finns
+  window.addEventListener("load", ()=> ensureSupabaseReady(()=> render(ITEM_ID)));
 </script>
 </body>
 </html>
