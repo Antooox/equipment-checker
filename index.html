@@ -3,57 +3,79 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stegra – NFC Rentals (MVP)</title>
+  <title>Stegra – NFC Rentals</title>
 
-  <!-- Load Supabase UMD (no defer so window.supabase is ready) -->
+  <!-- Supabase UMD (no defer) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
   <style>
-    :root { --bg:#0b1020; --fg:#ecf0ff; --muted:#9aa4c7; --card:#121a34; --border:#1f2a4a; --btn:#24409a; --btnb:#3550a7; }
+    :root{
+      --bg:#f7f8fb; --fg:#0f172a; --muted:#64748b; --card:#ffffff; --border:#e2e8f0;
+      --primary:#0f62fe; --primary-dark:#0b4bcc; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444;
+      --chip:#f1f5f9; --chipb:#e2e8f0;
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:var(--bg);color:var(--fg)}
-    .wrap{max-width:760px;margin:0 auto;padding:20px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    h1{margin:0 0 8px;font-size:22px}
-    h2{margin:10px 0 0;font-size:18px;color:var(--fg)}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif}
+    .wrap{max-width:980px;margin:0 auto;padding:20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(2,6,23,0.04)}
+    h1{margin:0 0 6px;font-size:24px}
+    h2{margin:8px 0 2px;font-size:20px}
     .muted{color:var(--muted)}
     label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
-    input,button{width:100%;padding:12px;border-radius:12px;border:1px solid #2a385f;background:#0f1630;color:var(--fg);font-size:16px}
-    button{cursor:pointer;background:var(--btn);border-color:var(--btnb);margin-top:14px}
+    input,button{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--fg);font-size:16px}
+    input:focus,button:focus{outline:2px solid #c7d2fe;outline-offset:1px}
+    button{cursor:pointer;background:var(--primary);border-color:var(--primary);color:#fff;margin-top:14px}
+    button:hover{background:var(--primary-dark)}
+    .ghost{background:#fff;border-color:var(--border);color:var(--fg)}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .small{font-size:12px;color:#a6b3df;margin-top:6px}
+    .small{font-size:12px;color:var(--muted);margin-top:6px}
     .hidden{display:none}
 
     /* List styles */
-    .list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .li{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:12px;background:#0f1630}
-    .right{margin-left:auto}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}
+    .chip{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--chipb);background:var(--chip);border-radius:999px;font-size:14px;cursor:pointer}
+    .chip.active{background:#e0ecff;border-color:#cfe0ff}
+    .list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:720px){ .list{grid-template-columns:1fr;} }
+    .li{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff}
+    .right{margin-left:auto;text-align:right}
     .dot{width:12px;height:12px;border-radius:999px;display:inline-block}
-    .green{background:#22c55e}
-    .red{background:#ef4444}
-    .gray{background:#9aa4c7}
-    a.itemlink{color:#9ec1ff;text-decoration:none}
-    .pill{display:inline-block;padding:5px 10px;border:1px solid #365; border-radius:999px; font-size:12px}
-    .back{background:#2b365f;border-color:#3e4c7a}
+    .green{background:var(--ok)} .red{background:var(--bad)} .gray{background:#94a3b8}
+    a.itemlink{color:var(--primary);text-decoration:none}
+    .pill{display:inline-block;padding:5px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;background:#f8fafc}
+    .back{background:#fff;border-color:var(--border);color:var(--fg)}
+    .section{margin-top:8px;margin-bottom:8px}
+    .hdr{display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:8px}
+    .hdr h2{margin:0}
+    .sep{height:1px;background:var(--border);margin:12px 0}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Stegra – NFC Rentals</h1>
+      <div class="hdr">
+        <h1>Stegra – NFC Rentals</h1>
+        <span id="adminLink" class="small muted" style="margin-left:auto"></span>
+      </div>
       <div id="msg" class="muted">Loading…</div>
 
-      <!-- MAIN LIST (no ?item=) -->
+      <!-- MAIN LIST -->
       <div id="listPanel" class="hidden">
-        <div class="muted">Tap an item to open its checkout page.</div>
+        <div class="toolbar">
+          <input id="search" placeholder="Search items…" style="max-width:260px" />
+          <div id="chips" class="section"></div>
+          <button id="clearFilter" class="ghost" style="width:auto">Clear filters</button>
+        </div>
         <div id="list" class="list"></div>
       </div>
 
-      <!-- ITEM PANEL (with ?item=UUID) -->
+      <!-- ITEM PANEL -->
       <div id="itemPanel" class="hidden">
         <div><span class="pill" id="statusPill">—</span></div>
         <h2 id="itemName">—</h2>
-        <div class="small">Renta ID: <span id="itemRenta">—</span></div>
+        <div class="small">Category: <span id="itemCat">—</span> · Renta ID: <span id="itemRenta">—</span></div>
+
+        <div class="sep"></div>
 
         <div id="startForm">
           <label>Full name</label>
@@ -84,8 +106,14 @@
           <button id="btnReturn">Returned</button>
         </div>
 
-        <div id="info" class="small"></div>
-        <button id="btnBack" class="back">← Back to list</button>
+        <div class="sep"></div>
+
+        <div class="row">
+          <button id="btnCsv" class="ghost">Download CSV history</button>
+          <button id="btnBack" class="back">← Back to list</button>
+        </div>
+
+        <div id="info" class="small" style="margin-top:8px"></div>
       </div>
     </div>
   </div>
@@ -98,12 +126,8 @@
 
   let sb = null;
   function ensureSupabaseReady(next){
-    if (window.supabase) {
-      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      next();
-    } else {
-      setTimeout(()=>ensureSupabaseReady(next), 50);
-    }
+    if (window.supabase) { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); next(); }
+    else setTimeout(()=>ensureSupabaseReady(next), 50);
   }
 
   const qs = s => document.querySelector(s);
@@ -114,14 +138,22 @@
     msg: qs("#msg"),
     listPanel: qs("#listPanel"),
     list: qs("#list"),
+    chips: qs("#chips"),
+    search: qs("#search"),
+    clearFilter: qs("#clearFilter"),
+    adminLink: qs("#adminLink"),
+
     itemPanel: qs("#itemPanel"),
     statusPill: qs("#statusPill"),
     itemName: qs("#itemName"),
+    itemCat: qs("#itemCat"),
     itemRenta: qs("#itemRenta"),
     startForm: qs("#startForm"),
     returnForm: qs("#returnForm"),
     info: qs("#info"),
     btnBack: qs("#btnBack"),
+    btnCsv: qs("#btnCsv"),
+
     fName: qs("#fName"),
     fPhone: qs("#fPhone"),
     fCompany: qs("#fCompany"),
@@ -133,16 +165,12 @@
     btnReturn: qs("#btnReturn")
   };
 
-  // Back to main list
-  el.btnBack.onclick = () => {
-    location.href = location.origin + location.pathname;
-  };
+  // Navigation
+  el.btnBack.onclick = () => { location.href = location.origin + location.pathname; };
 
   function loadIdentity(){
     try{ const v = JSON.parse(localStorage.getItem("stegra_identity")||"{}");
-      el.fName.value = v.name||"";
-      el.fPhone.value = v.phone||"";
-      el.fCompany.value = v.company||"";
+      el.fName.value = v.name||""; el.fPhone.value = v.phone||""; el.fCompany.value = v.company||"";
     }catch{}
   }
   function saveIdentity(){
@@ -152,25 +180,54 @@
   function setStatusBadge(s){
     el.statusPill.textContent = (s||"available").toUpperCase();
   }
-  function dotClass(status){
-    return status === 'available' ? 'green' : (status === 'out' ? 'red' : 'gray');
-  }
+  function dotClass(status){ return status==='available'?'green':(status==='out'?'red':'gray'); }
 
   // -------- LIST VIEW ----------
+  let allItems = [];
+  let activeCat = null;
+
+  const SUGGESTED_CATS = [
+    'Vehicles & Lifts','Power Tools','Lighting','Electrical','Batteries & Chargers','Site Equipment'
+  ];
+
+  function renderChips(distinctCats){
+    const cats = Array.from(new Set([ ...SUGGESTED_CATS, ...distinctCats.filter(Boolean) ]));
+    el.chips.innerHTML = '';
+    cats.forEach(cat=>{
+      const b = document.createElement('button');
+      b.className = 'chip' + (activeCat===cat?' active':'');
+      b.textContent = cat;
+      b.onclick = ()=>{ activeCat = activeCat===cat?null:cat; renderListFiltered(); };
+      el.chips.appendChild(b);
+    });
+  }
+
   async function fetchAllItems(){
-    const { data, error } = await sb.from("items").select("*").order("created_at", { ascending: false });
+    const { data, error } = await sb.from("items").select("*").order("name", { ascending: true });
     if(error) throw error;
     return data || [];
   }
+
+  function renderListFiltered(){
+    const q = el.search.value.toLowerCase().trim();
+    const filtered = allItems.filter(it=>{
+      const matchesCat = !activeCat || (it.category||'').toLowerCase() === activeCat.toLowerCase();
+      const hay = `${it.name} ${it.renta_asset_code||''} ${it.category||''}`.toLowerCase();
+      const matchesText = !q || hay.includes(q);
+      return matchesCat && matchesText;
+    });
+    renderList(filtered);
+  }
+
   function renderList(items){
     el.list.innerHTML = "";
-    if(!items.length){ el.list.innerHTML = '<div class="muted">No items yet.</div>'; return; }
+    if(!items.length){ el.list.innerHTML = '<div class="muted">No items found.</div>'; return; }
     for (const it of items){
       const row = document.createElement('div');
       row.className = 'li';
       const statusDot = `<span class="dot ${dotClass(it.status)}"></span>`;
       const name = `<a class="itemlink" href="?item=${it.id}"><strong>${it.name}</strong></a>`;
-      const renta = `<div class="small muted">Renta ID: ${it.renta_asset_code || '—'}</div>`;
+      const renta = `<div class="small muted">${it.category || 'Uncategorized'} · Renta ID: ${it.renta_asset_code || '—'}</div>`;
       row.innerHTML = `
         ${statusDot}
         <div>
@@ -182,19 +239,25 @@
       el.list.appendChild(row);
     }
   }
+
   async function showList(){
     el.itemPanel.classList.add('hidden');
     el.listPanel.classList.remove('hidden');
     el.msg.textContent = "Loading…";
     try{
-      const items = await fetchAllItems();
-      renderList(items);
+      allItems = await fetchAllItems();
+      renderChips(allItems.map(i=>i.category));
+      renderList(allItems);
       el.msg.textContent = "";
     }catch(e){
-      console.error(e);
-      el.msg.textContent = "Could not load items.";
+      console.error(e); el.msg.textContent = "Could not load items.";
     }
   }
+
+  el.search.addEventListener('input', renderListFiltered);
+  el.clearFilter.onclick = ()=>{
+    el.search.value=''; activeCat=null; renderListFiltered();
+  };
 
   // -------- ITEM VIEW ----------
   async function fetchItem(id){
@@ -204,8 +267,7 @@
   }
   async function getActiveRental(item_id){
     const { data, error } = await sb.from("rentals").select("*").eq("item_id", item_id).is("return_at", null).maybeSingle();
-    if(error) throw error;
-    return data;
+    if(error) throw error; return data;
   }
   async function uploadPhoto(file){
     if(!file) return null;
@@ -215,6 +277,7 @@
     const { data: pub } = sb.storage.from(RETURNS_BUCKET).getPublicUrl(key);
     return pub?.publicUrl || null;
   }
+
   async function startRental(item){
     const user_name = el.fName.value.trim();
     if(!user_name){ el.msg.textContent = "Please enter your name."; return; }
@@ -243,6 +306,45 @@
     el.msg.textContent = "Returned ✔";
     renderItem(item.id);
   }
+
+  function toCSV(rows){
+    if(!rows.length) return '';
+    const headers = Object.keys(rows[0]);
+    const esc = (v)=>`"${String(v??'').replace(/"/g,'""')}"`;
+    return [headers.join(','), ...rows.map(r=> headers.map(h=> esc(r[h])).join(','))].join('\n');
+  }
+
+  async function downloadItemHistoryCSV(item){
+    // Fetch full rental history for this item
+    const { data, error } = await sb.from('rentals')
+      .select('*')
+      .eq('item_id', item.id)
+      .order('start_at', { ascending:false });
+    if(error){ el.msg.textContent = "CSV export failed."; console.error(error); return; }
+
+    const rows = (data||[]).map(r=>({
+      item_name: item.name,
+      category: item.category || '',
+      renta_asset_code: item.renta_asset_code || '',
+      user_name: r.user_name,
+      phone: r.phone || '',
+      company: r.company || '',
+      start_at: r.start_at,
+      return_at: r.return_at || '',
+      expected_return: r.expected_return || '',
+      note: r.note || '',
+      return_photo_url: r.return_photo_url || ''
+    }));
+
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = item.name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    a.href = url; a.download = `rental_history_${safeName}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
   async function renderItem(id){
     el.listPanel.classList.add('hidden');
     el.itemPanel.classList.remove('hidden');
@@ -252,6 +354,7 @@
       setStatusBadge(item.status);
       el.itemName.textContent = item.name;
       el.itemRenta.textContent = item.renta_asset_code || "—";
+      el.itemCat.textContent = item.category || "Uncategorized";
       loadIdentity();
 
       const active = await getActiveRental(item.id);
@@ -266,10 +369,13 @@
         el.info.textContent = "This item is available.";
         el.btnStart.onclick = () => startRental(item);
       }
+
+      // CSV history
+      el.btnCsv.onclick = () => downloadItemHistoryCSV(item);
+
       el.msg.textContent = "";
     }catch(e){
-      console.error(e);
-      el.msg.textContent = "Item not found. Check the UUID.";
+      console.error(e); el.msg.textContent = "Item not found. Check the UUID.";
     }
   }
 
@@ -278,6 +384,7 @@
     ensureSupabaseReady(()=> {
       if (p.get("item")) renderItem(p.get("item"));
       else showList();
+      el.adminLink.innerHTML = `<a href="${location.origin + location.pathname}" class="muted" style="text-decoration:none">Home</a>`;
     });
   });
 </script>
