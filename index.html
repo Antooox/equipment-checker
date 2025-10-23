@@ -21,10 +21,16 @@
   .link{color:#2563eb; text-decoration:none; font-weight:700}
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,.04)}
 
-  /* Search */
-  .search-wrap{margin-bottom:14px}
-  .search{width:100%; border:1px solid var(--line); background:#fff; border-radius:12px; padding:14px; font-size:16px; outline:0}
+  /* Search & toolbar */
+  .search-wrap{margin-bottom:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .search{flex:1 1 380px; border:1px solid var(--line); background:#fff; border-radius:12px; padding:14px; font-size:16px; outline:0}
   .search:focus{box-shadow:0 0 0 3px var(--ring)}
+  .btn{display:inline-flex; align-items:center; gap:.5rem; padding:.6rem .95rem; border-radius:10px; border:1px solid var(--chip-border); background:#fff; color:var(--text); font-weight:700; cursor:pointer}
+  .btn:hover{background:var(--chip-hover)}
+  .btn-primary{background:#1d4ed8; color:#fff; border-color:#1d4ed8}
+  .btn-primary:hover{filter:brightness(0.95)}
+  .btn-danger{background:#ef4444; color:#fff; border-color:#ef4444}
+  .btn-danger:hover{filter:brightness(0.95)}
 
   /* Filters */
   .filters-container{ position:sticky; top:0; z-index:30; padding:8px 0 10px; background:linear-gradient(#f6f7fb 50%, rgba(246,247,251,0)); }
@@ -37,12 +43,9 @@
   .filter-chip:hover{ background:var(--chip-hover) }
   .filter-chip.is-active{ background:var(--chip-active); border-color:var(--chip-active-border); color:var(--chip-active-text) }
   .filter-chip[aria-disabled="true"]{ opacity:.45; cursor:not-allowed }
-  .btn-clear,.btn{
-    display:inline-flex; align-items:center; gap:.5rem; padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--chip-border);
-    background:#fff; color:var(--text); font-weight:700; cursor:pointer;
-  }
-  .btn-clear:hover,.btn:hover{ background:var(--chip-hover) }
-  .btn:focus-visible,.btn-clear:focus-visible,.filter-chip:focus-visible{outline:0; box-shadow:0 0 0 3px var(--ring)}
+  .btn-clear{display:inline-flex; align-items:center; gap:.5rem; padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--chip-border); background:#fff; color:var(--text); font-weight:700; cursor:pointer}
+  .btn-clear:hover{ background:var(--chip-hover) }
+  .chip-count{font-weight:700; font-size:12px; padding:.1rem .5rem; border-radius:9999px; background:#eef2ff; color:#3730a3}
 
   /* List */
   .grid{ display:grid; gap:14px; }
@@ -62,23 +65,25 @@
   .right{display:flex; align-items:center; gap:10px}
   .small{font-size:12px; color:var(--muted)} .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end; margin:10px 0 6px }
   .muted{color:var(--muted)}
-
-  /* Empty */
   .empty{padding:28px; text-align:center; color:var(--muted)}
-  .chip-count{font-weight:700; font-size:12px; padding:.1rem .5rem; border-radius:9999px; background:#eef2ff; color:#3730a3}
 
   /* Modal */
   .modal{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:none; align-items:center; justify-content:center; padding:16px }
   .modal.show{ display:flex }
-  .dialog{ width:100%; max-width:520px; background:#fff; border-radius:16px; border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:18px }
+  .dialog{ width:100%; max-width:560px; background:#fff; border-radius:16px; border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.25); padding:18px }
   .dialog h3{ margin:0 0 6px; font-size:20px }
   .dialog .row{ display:flex; gap:10px; align-items:center; margin:10px 0 }
-  .dialog label{ font-weight:700; font-size:14px }
-  .input{ width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; outline:0 }
-  .input:focus{ box-shadow:0 0 0 3px var(--ring) }
-  .dialog .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px }
-  .btn-primary{ background:#1d4ed8; color:#fff; border-color:#1d4ed8 }
-  .btn-primary:hover{ filter:brightness(0.95) }
+  .dialog label{ font-weight:700; font-size:14px; min-width:140px }
+  .input, select{
+    width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; outline:0; background:#fff
+  }
+  .input:focus, select:focus{ box-shadow:0 0 0 3px var(--ring) }
+  .dialog .actions{ display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap }
+  .actions-right{ display:flex; gap:10px; margin-left:auto }
+
+  /* Admin modal (add item) */
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media(max-width:640px){ .grid-2{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -89,9 +94,11 @@
     </header>
 
     <div class="panel">
-      <!-- Search -->
+      <!-- Search + admin -->
       <div class="search-wrap">
         <input id="search" class="search" placeholder="Search items…" autocomplete="off" />
+        <button class="btn" id="exportCsvAll" type="button" title="Download CSV of all loans">Download loans CSV</button>
+        <button class="btn btn-primary" id="addItemBtn" type="button" title="Add new item (password)">Add item</button>
       </div>
 
       <!-- Filters -->
@@ -99,7 +106,6 @@
         <div class="filter-bar" id="filterBar">
           <!-- chips injected by JS -->
           <button class="btn-clear" id="clearFilters" type="button">Clear filters</button>
-          <button class="btn" id="exportCsvAll" type="button" title="Download CSV of all loans">Download loans CSV</button>
         </div>
       </div>
 
@@ -116,31 +122,86 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Item Modal (borrow/return/delete) -->
   <div class="modal" id="modal">
     <div class="dialog">
       <h3 id="dlgTitle">Item</h3>
       <div class="small muted" id="dlgMeta"></div>
 
+      <!-- Borrow form -->
       <div id="borrowBlock" style="display:none">
         <div class="row">
-          <label for="borrower" style="min-width:120px">Borrowed by</label>
-          <input id="borrower" class="input" placeholder="Name / company / badge" />
+          <label for="borrower">Borrowed by</label>
+          <input id="borrower" class="input" placeholder="Name" />
+        </div>
+        <div class="row">
+          <label for="company">Company</label>
+          <input id="company" class="input" placeholder="Company" />
+        </div>
+        <div class="row">
+          <label for="duration">Planned duration</label>
+          <select id="duration">
+            <option value="">Select…</option>
+            <option>2 hours</option>
+            <option>4 hours</option>
+            <option>8 hours</option>
+            <option>1 day</option>
+            <option>2 days</option>
+            <option>1 week</option>
+            <option>Other (type below)</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="durationNote">Other / note</label>
+          <input id="durationNote" class="input" placeholder="e.g. until Friday 14:00" />
         </div>
       </div>
 
+      <!-- Return block -->
       <div id="returnBlock" class="small" style="display:none">
         This item is currently OUT. Click <b>Return</b> to mark it as available.
       </div>
 
       <div class="actions">
         <button class="btn" id="dlgCancel" type="button">Close</button>
-        <button class="btn btn-primary" id="dlgPrimary" type="button">Save</button>
+        <div class="actions-right">
+          <button class="btn btn-danger" id="deleteItemBtn" type="button" title="Delete item (password)">Delete</button>
+          <button class="btn btn-primary" id="dlgPrimary" type="button">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Modal (add item) -->
+  <div class="modal" id="adminModal">
+    <div class="dialog">
+      <h3>Add item</h3>
+      <div class="grid-2">
+        <div class="row"><label for="aiName">Name</label><input id="aiName" class="input" placeholder="e.g. Scissor Lift 03" /></div>
+        <div class="row"><label for="aiRenta">Renta ID</label><input id="aiRenta" class="input" placeholder="e.g. RENT-450" /></div>
+        <div class="row"><label for="aiCategory">Category</label>
+          <select id="aiCategory"></select>
+        </div>
+        <div class="row"><label for="aiAvailable">Available</label>
+          <select id="aiAvailable">
+            <option value="true">AVAILABLE</option>
+            <option value="false">OUT</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="aiCancel" type="button">Close</button>
+        <div class="actions-right">
+          <button class="btn btn-primary" id="aiSave" type="button">Add</button>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
+/* -------------------- Config -------------------- */
+const ADMIN_PASSWORD = "Stegra2025!";
+
 /* -------------------- Data (example set) -------------------- */
 const CATEGORIES = [
   "Vehicles & Lifts",
@@ -152,22 +213,15 @@ const CATEGORIES = [
 ];
 
 const items = [
-  {
-    id:"rent-310",
-    name:"Boom Lift 16m",
-    category:"Vehicles & Lifts",
-    rentaId:"RENT-310",
-    available:true,
-    loanHistory:[{ itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }]
-  },
+  { id:"rent-310", name:"Boom Lift 16m", category:"Vehicles & Lifts", rentaId:"RENT-310", available:true,
+    loanHistory:[{ itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", company:"", planned:"", note:"", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }] },
   { id:"rent-311", name:"Forklift 3.5t", category:"Vehicles & Lifts", rentaId:"RENT-311", available:true,
-    loanHistory:[{ itemId:"rent-311", itemName:"Forklift 3.5t", borrowedBy:"Sara Lind", borrowedAt:"2025-10-12 07:55", returnedAt:"2025-10-12 15:02" }] },
+    loanHistory:[{ itemId:"rent-311", itemName:"Forklift 3.5t", borrowedBy:"Sara Lind", company:"", planned:"", note:"", borrowedAt:"2025-10-12 07:55", returnedAt:"2025-10-12 15:02" }] },
   { id:"rent-1", name:"Scissor Lift 01", category:"Vehicles & Lifts", rentaId:"RENT-1", available:true, loanHistory:[] },
   { id:"rent-202", name:"Scissor Lift 02", category:"Vehicles & Lifts", rentaId:"RENT-202", available:false,
-    loanHistory:[{ itemId:"rent-202", itemName:"Scissor Lift 02", borrowedBy:"Jonas Olsson", borrowedAt:"2025-10-22 09:10", returnedAt:"" }] },
+    loanHistory:[{ itemId:"rent-202", itemName:"Scissor Lift 02", borrowedBy:"Jonas Olsson", company:"", planned:"", note:"", borrowedAt:"2025-10-22 09:10", returnedAt:"" }] },
   { id:"pow-77", name:"Hilti TE 70-ATC Hammer", category:"Power Tools", rentaId:"RENT-77", available:true,
-    loanHistory:[{ itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }] },
-  // intentionally leaving categories like Lighting/Electrical empty to show empty-state & counts
+    loanHistory:[{ itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", company:"", planned:"", note:"", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }] },
 ];
 
 /* -------------------- State -------------------- */
@@ -175,7 +229,7 @@ let activeCategory = "";
 let searchTerm = "";
 let dialogItem = null;
 
-/* -------------------- DOM -------------------- */
+/* -------------------- DOM refs -------------------- */
 const filterBar = document.getElementById("filterBar");
 const itemsGrid = document.getElementById("itemsGrid");
 const clearBtn  = document.getElementById("clearFilters");
@@ -183,8 +237,9 @@ const searchEl  = document.getElementById("search");
 const resultCountEl = document.getElementById("resultCount");
 const exportCsvAllBtn = document.getElementById("exportCsvAll");
 const emptyState = document.getElementById("emptyState");
+const addItemBtn = document.getElementById("addItemBtn");
 
-/* Modal refs */
+/* Item modal refs */
 const modal = document.getElementById("modal");
 const dlgTitle = document.getElementById("dlgTitle");
 const dlgMeta = document.getElementById("dlgMeta");
@@ -193,6 +248,19 @@ const dlgCancel = document.getElementById("dlgCancel");
 const borrowBlock = document.getElementById("borrowBlock");
 const returnBlock = document.getElementById("returnBlock");
 const borrowerInput = document.getElementById("borrower");
+const companyInput = document.getElementById("company");
+const durationSelect = document.getElementById("duration");
+const durationNoteInput = document.getElementById("durationNote");
+const deleteItemBtn = document.getElementById("deleteItemBtn");
+
+/* Admin modal refs */
+const adminModal = document.getElementById("adminModal");
+const aiName = document.getElementById("aiName");
+const aiRenta = document.getElementById("aiRenta");
+const aiCategory = document.getElementById("aiCategory");
+const aiAvailable = document.getElementById("aiAvailable");
+const aiCancel = document.getElementById("aiCancel");
+const aiSave = document.getElementById("aiSave");
 
 /* -------------------- Utils -------------------- */
 function nowString(){
@@ -202,14 +270,18 @@ function nowString(){
 }
 function stop(e){ e.preventDefault(); e.stopPropagation(); }
 
-/* -------------------- Filters -------------------- */
+function requireAdmin(){
+  const pwd = prompt("Enter admin password:");
+  return pwd === ADMIN_PASSWORD;
+}
+
+/* -------------------- Filters / chips -------------------- */
 function countByCategory(){
   const map = new Map(CATEGORIES.map(c=>[c,0]));
   items.forEach(i => map.set(i.category, (map.get(i.category)||0)+1));
   return map;
 }
 function renderChips(){
-  // remove existing chips (keep clear/export buttons at the end)
   [...filterBar.querySelectorAll('.filter-chip')].forEach(n=>n.remove());
   const beforeNode = document.getElementById("clearFilters");
   const counts = countByCategory();
@@ -222,12 +294,8 @@ function renderChips(){
     const zero = (counts.get(cat) || 0) === 0;
     if (zero){ b.setAttribute('aria-disabled','true'); }
     b.addEventListener("click", ()=>{
-      if (b.getAttribute('aria-disabled') === 'true') {
-        // allow click to still filter to empty view (optional). If you want to block, just return.
-        activeCategory = cat;
-      } else {
-        activeCategory = (activeCategory === cat) ? "" : cat;
-      }
+      // tillåter tom vy även för 0-stycken så man ser "No items found"
+      activeCategory = (activeCategory === cat) ? "" : cat;
       document.querySelectorAll(".filter-chip").forEach(ch=>ch.classList.toggle("is-active", ch.dataset.cat === activeCategory && activeCategory!==""));
       renderList();
     });
@@ -267,7 +335,7 @@ function matches(item){
 function card(item){
   const el = document.createElement("div");
   el.className = "card";
-  el.addEventListener('click', ()=> openItemDialog(item)); // <— klick öppnar modal
+  el.addEventListener('click', ()=> openItemDialog(item));
 
   const left = document.createElement("div");
   left.className = "left";
@@ -292,8 +360,13 @@ function card(item){
   right.appendChild(status);
 
   const csvBtn = document.createElement("button");
-  csvBtn.className = "btn"; csvBtn.type = "button"; csvBtn.textContent = "Loans CSV"; csvBtn.title = "Download CSV for this item";
-  csvBtn.addEventListener("click", (e)=>{ stop(e); if (!item.loanHistory.length){ alert("No loans to export for this item."); return; } download(`loans_${item.id}.csv`, toCsv(item.loanHistory)); });
+  csvBtn.className = "btn"; csvBtn.type = "button"; csvBtn.textContent = "Loans CSV";
+  csvBtn.title = "Download CSV for this item";
+  csvBtn.addEventListener("click", (e)=>{ 
+    stop(e); 
+    if (!item.loanHistory.length){ alert("No loans to export for this item."); return; } 
+    download(`loans_${item.id}.csv`, toCsv(item.loanHistory)); 
+  });
   right.appendChild(csvBtn);
 
   el.appendChild(left); el.appendChild(right);
@@ -313,16 +386,21 @@ function renderList(){
   resultCountEl.textContent = `${list.length} item${list.length===1?"":"s"} shown`;
 }
 
+/* Search / Clear */
 searchEl.addEventListener("input", (e)=>{ searchTerm = (e.target.value || "").trim().toLowerCase(); renderList(); });
 clearBtn.addEventListener("click", ()=>{ activeCategory = ""; searchTerm = ""; searchEl.value = ""; renderList(); });
 
-/* -------------------- Modal: Borrow / Return -------------------- */
+/* -------------------- Modal: Borrow / Return / Delete -------------------- */
 function openItemDialog(item){
   dialogItem = item;
   dlgTitle.textContent = item.name;
   dlgMeta.textContent = `${item.category} · Renta ID: ${item.rentaId}`;
 
   borrowerInput.value = "";
+  companyInput.value = "";
+  durationSelect.value = "";
+  durationNoteInput.value = "";
+
   if (item.available){
     borrowBlock.style.display = "block";
     returnBlock.style.display = "none";
@@ -333,29 +411,42 @@ function openItemDialog(item){
     dlgPrimary.textContent = "Return";
   }
   modal.classList.add("show");
-  borrowerInput.focus?.();
+  (item.available ? borrowerInput : dlgPrimary).focus?.();
 }
 function closeDialog(){ modal.classList.remove("show"); dialogItem = null; }
 
 dlgCancel.addEventListener("click", closeDialog);
 modal.addEventListener("click", (e)=>{ if (e.target === modal) closeDialog(); });
+document.addEventListener("keydown", (e)=>{ 
+  if (e.key === "Escape"){ 
+    if (adminModal.classList.contains("show")) adminModal.classList.remove("show");
+    if (modal.classList.contains("show")) modal.classList.remove("show");
+  }
+});
 
 dlgPrimary.addEventListener("click", ()=>{
   if (!dialogItem) return;
 
   if (dialogItem.available){
     const name = borrowerInput.value.trim();
-    if (!name){ alert("Please enter who is borrowing the item."); return; }
+    if (!name){ alert("Please enter who is borrowing the item."); borrowerInput.focus(); return; }
+    const company = companyInput.value.trim();
+    const planned = durationSelect.value || "";
+    const note = durationNoteInput.value.trim();
+
     dialogItem.available = false;
     dialogItem.loanHistory.push({
       itemId: dialogItem.id,
       itemName: dialogItem.name,
       borrowedBy: name,
+      company,
+      planned,
+      note,
       borrowedAt: nowString(),
       returnedAt: ""
     });
   } else {
-    // Return: match last open loan
+    // Return
     const lastOpen = [...dialogItem.loanHistory].reverse().find(l => !l.returnedAt);
     if (lastOpen){ lastOpen.returnedAt = nowString(); }
     dialogItem.available = true;
@@ -365,12 +456,62 @@ dlgPrimary.addEventListener("click", ()=>{
   renderList();
 });
 
-/* -------------------- Init -------------------- */
-renderList();
+/* Delete (password) */
+deleteItemBtn.addEventListener("click", ()=>{
+  if (!dialogItem) return;
+  if (!requireAdmin()) { alert("Wrong password."); return; }
+  if (!confirm(`Delete "${dialogItem.name}"? This cannot be undone.`)) return;
+  const idx = items.findIndex(i => i.id === dialogItem.id);
+  if (idx >= 0) items.splice(idx,1);
+  closeDialog();
+  renderList();
+});
 
-/* -------------------- (OPTIONAL) Supabase integration later --------------------
-   Replace in-memory 'items' with DB rows; keep same field names or map to them.
-------------------------------------------------------------------------------- */
+/* -------------------- Admin: Add item (password) -------------------- */
+function openAdminModal(){
+  if (!requireAdmin()){ alert("Wrong password."); return; }
+  // populate categories
+  aiCategory.innerHTML = "";
+  CATEGORIES.forEach(c=>{
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    aiCategory.appendChild(opt);
+  });
+  aiName.value = "";
+  aiRenta.value = "";
+  aiAvailable.value = "true";
+  adminModal.classList.add("show");
+  aiName.focus();
+}
+function closeAdmin(){ adminModal.classList.remove("show"); }
+
+addItemBtn.addEventListener("click", openAdminModal);
+aiCancel.addEventListener("click", closeAdmin);
+adminModal.addEventListener("click", (e)=>{ if (e.target === adminModal) closeAdmin(); });
+
+aiSave.addEventListener("click", ()=>{
+  if (!requireAdmin()){ alert("Wrong password."); return; } // second check before mutation
+  const name = aiName.value.trim();
+  const rentaId = aiRenta.value.trim();
+  const category = aiCategory.value;
+  const available = aiAvailable.value === "true";
+  if (!name || !rentaId){ alert("Name and Renta ID are required."); return; }
+
+  const id = (rentaId || name).toLowerCase().replace(/[^a-z0-9]+/g,'-') + "-" + Date.now();
+  items.push({
+    id, name, category, rentaId, available, loanHistory:[]
+  });
+
+  closeAdmin();
+  renderList();
+});
+
+/* -------------------- Init -------------------- */
+(function init(){
+  // fill category select once if opened without password (prevent empty select)
+  aiCategory.innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+  renderList();
+})();
 </script>
 </body>
 </html>
