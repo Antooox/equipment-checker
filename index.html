@@ -67,25 +67,32 @@
   .muted{color:var(--muted)}
   .empty{padding:28px; text-align:center; color:var(--muted)}
 
-/* Modal */
-.modal{
-  position:fixed; inset:0;
-  background:rgba(17,24,39,.55);
-  display:none; align-items:center; justify-content:center;
-  padding:16px;
-  z-index:1000;              /* ⬅️ över filter-baren */
-}
-.modal.show{ display:flex }
-.dialog{
-  width:100%; max-width:560px;
-  background:#fff; border-radius:16px; border:1px solid var(--line);
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-  padding:18px;
-}
+  /* Modal */
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(17,24,39,.55);
+    display:none; align-items:center; justify-content:center;
+    padding:16px;
+    z-index:1000; /* över sticky filter-baren */
+  }
+  .modal.show{ display:flex }
+  .dialog{
+    width:100%; max-width:560px;
+    background:#fff; border-radius:16px; border:1px solid var(--line);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    padding:18px;
+  }
+  body.modal-open{ overflow:hidden; }
 
-/* Lås scroll när modal är öppen */
-body.modal-open{ overflow:hidden; }
-
+  .dialog h3{ margin:0 0 6px; font-size:20px }
+  .dialog .row{ display:flex; gap:10px; align-items:center; margin:10px 0 }
+  .dialog label{ font-weight:700; font-size:14px; min-width:140px }
+  .input, select{
+    width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; outline:0; background:#fff
+  }
+  .input:focus, select:focus{ box-shadow:0 0 0 3px var(--ring) }
+  .dialog .actions{ display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap }
+  .actions-right{ display:flex; gap:10px; margin-left:auto }
 
   /* Admin modal (add item) */
   .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
@@ -207,8 +214,9 @@ body.modal-open{ overflow:hidden; }
 <script>
 /* -------------------- Config -------------------- */
 const ADMIN_PASSWORD = "Stegra2025!";
+const STORAGE_KEY = "stegra_nfc_rentals_items_v1";
 
-/* -------------------- Data (example set) -------------------- */
+/* -------------------- Categories -------------------- */
 const CATEGORIES = [
   "Vehicles & Lifts",
   "Power Tools",
@@ -218,7 +226,8 @@ const CATEGORIES = [
   "Site Equipment"
 ];
 
-const items = [
+/* -------------------- Seed data (first run) -------------------- */
+const SEED_ITEMS = [
   { id:"rent-310", name:"Boom Lift 16m", category:"Vehicles & Lifts", rentaId:"RENT-310", available:true,
     loanHistory:[{ itemId:"rent-310", itemName:"Boom Lift 16m", borrowedBy:"Mikael Svensson", company:"", planned:"", note:"", borrowedAt:"2025-10-10 08:22", returnedAt:"2025-10-10 16:05" }] },
   { id:"rent-311", name:"Forklift 3.5t", category:"Vehicles & Lifts", rentaId:"RENT-311", available:true,
@@ -230,7 +239,29 @@ const items = [
     loanHistory:[{ itemId:"pow-77", itemName:"Hilti TE 70-ATC Hammer", borrowedBy:"Ali Reza", company:"", planned:"", note:"", borrowedAt:"2025-10-03 11:05", returnedAt:"2025-10-04 08:30" }] },
 ];
 
+/* -------------------- Persistence helpers -------------------- */
+function loadItems(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed;
+  }catch(e){
+    console.warn("Failed to load items:", e);
+    return null;
+  }
+}
+function saveItems(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }catch(e){
+    console.warn("Failed to save items:", e);
+  }
+}
+
 /* -------------------- State -------------------- */
+let items = loadItems() ?? SEED_ITEMS.slice();
 let activeCategory = "";
 let searchTerm = "";
 let dialogItem = null;
@@ -275,7 +306,6 @@ function nowString(){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function stop(e){ e.preventDefault(); e.stopPropagation(); }
-
 function requireAdmin(){
   const pwd = prompt("Enter admin password:");
   return pwd === ADMIN_PASSWORD;
@@ -300,7 +330,6 @@ function renderChips(){
     const zero = (counts.get(cat) || 0) === 0;
     if (zero){ b.setAttribute('aria-disabled','true'); }
     b.addEventListener("click", ()=>{
-      // tillåter tom vy även för 0-stycken så man ser "No items found"
       activeCategory = (activeCategory === cat) ? "" : cat;
       document.querySelectorAll(".filter-chip").forEach(ch=>ch.classList.toggle("is-active", ch.dataset.cat === activeCategory && activeCategory!==""));
       renderList();
@@ -416,17 +445,23 @@ function openItemDialog(item){
     returnBlock.style.display = "block";
     dlgPrimary.textContent = "Return";
   }
+  document.body.classList.add('modal-open');
   modal.classList.add("show");
   (item.available ? borrowerInput : dlgPrimary).focus?.();
 }
-function closeDialog(){ modal.classList.remove("show"); dialogItem = null; }
+function closeDialog(){
+  modal.classList.remove("show");
+  document.body.classList.remove('modal-open');
+  dialogItem = null;
+}
 
 dlgCancel.addEventListener("click", closeDialog);
 modal.addEventListener("click", (e)=>{ if (e.target === modal) closeDialog(); });
-document.addEventListener("keydown", (e)=>{ 
-  if (e.key === "Escape"){ 
-    if (adminModal.classList.contains("show")) adminModal.classList.remove("show");
-    if (modal.classList.contains("show")) modal.classList.remove("show");
+
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape"){
+    if (adminModal.classList.contains("show")) { closeAdmin(); }
+    if (modal.classList.contains("show")) { closeDialog(); }
   }
 });
 
@@ -458,6 +493,7 @@ dlgPrimary.addEventListener("click", ()=>{
     dialogItem.available = true;
   }
 
+  saveItems();   // persist change
   closeDialog();
   renderList();
 });
@@ -469,6 +505,7 @@ deleteItemBtn.addEventListener("click", ()=>{
   if (!confirm(`Delete "${dialogItem.name}"? This cannot be undone.`)) return;
   const idx = items.findIndex(i => i.id === dialogItem.id);
   if (idx >= 0) items.splice(idx,1);
+  saveItems();   // persist delete
   closeDialog();
   renderList();
 });
@@ -476,7 +513,6 @@ deleteItemBtn.addEventListener("click", ()=>{
 /* -------------------- Admin: Add item (password) -------------------- */
 function openAdminModal(){
   if (!requireAdmin()){ alert("Wrong password."); return; }
-  // populate categories
   aiCategory.innerHTML = "";
   CATEGORIES.forEach(c=>{
     const opt = document.createElement("option");
@@ -486,10 +522,13 @@ function openAdminModal(){
   aiName.value = "";
   aiRenta.value = "";
   aiAvailable.value = "true";
+  document.body.classList.add('modal-open');
   adminModal.classList.add("show");
-  aiName.focus();
 }
-function closeAdmin(){ adminModal.classList.remove("show"); }
+function closeAdmin(){
+  adminModal.classList.remove("show");
+  document.body.classList.remove('modal-open');
+}
 
 addItemBtn.addEventListener("click", openAdminModal);
 aiCancel.addEventListener("click", closeAdmin);
@@ -508,13 +547,14 @@ aiSave.addEventListener("click", ()=>{
     id, name, category, rentaId, available, loanHistory:[]
   });
 
+  saveItems();   // persist add
   closeAdmin();
   renderList();
 });
 
 /* -------------------- Init -------------------- */
 (function init(){
-  // fill category select once if opened without password (prevent empty select)
+  // ensure category select has values even if adminModal öppnas senare
   aiCategory.innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join("");
   renderList();
 })();
