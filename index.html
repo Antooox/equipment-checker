@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stegra – NFC Rentals (MVP)</title>
+  <script defer src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;background:#0b1020;color:#ecf0ff}
+    .wrap{max-width:640px;margin:0 auto;padding:20px}
+    .card{background:#121a34;border:1px solid #1f2a4a;border-radius:14px;padding:16px}
+    h1{margin:0 0 8px;font-size:20px} .muted{color:#9aa4c7}
+    label{display:block;margin-top:10px;font-size:14px;color:#9aa4c7}
+    input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #2a385f;background:#0f1630;color:#ecf0ff;font-size:16px}
+    button{cursor:pointer;background:#24409a;border-color:#3550a7;margin-top:14px}
+    .pill{display:inline-block;padding:5px 10px;border:1px solid #365; border-radius:999px; font-size:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .small{font-size:12px;color:#a6b3df;margin-top:6px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Stegra – NFC Rentals</h1>
+      <div id="msg" class="muted">Laddar…</div>
+
+      <div id="itemPanel" class="hidden">
+        <div><span class="pill" id="statusPill">—</span></div>
+        <h2 id="itemName" class="muted" style="margin:8px 0 0">—</h2>
+        <div class="small">Renta ID: <span id="itemRenta">—</span></div>
+
+        <div id="startForm">
+          <label>Namn</label>
+          <input id="fName" placeholder="t.ex. Andreas Pettersson" />
+          <div class="row">
+            <div>
+              <label>Telefon</label>
+              <input id="fPhone" placeholder="070-..." />
+            </div>
+            <div>
+              <label>Företag (valfritt)</label>
+              <input id="fCompany" placeholder="Entreprenör AB" />
+            </div>
+          </div>
+          <label>Förväntad retur (valfritt)</label>
+          <input id="fExpected" type="date" />
+          <label>Notering (valfritt)</label>
+          <input id="fNote" placeholder="Var används?" />
+          <button id="btnStart">Start renting</button>
+          <div class="small">Namn/telefon sparas lokalt för snabbare nästa gång.</div>
+        </div>
+
+        <div id="returnForm" class="hidden">
+          <label>Foto (valfritt)</label>
+          <input id="fPhoto" type="file" accept="image/*" capture="environment" />
+          <label>Notering (valfritt)</label>
+          <input id="fReturnNote" placeholder="Skick / var lämnat" />
+          <button id="btnReturn">Returned</button>
+        </div>
+
+        <div id="info" class="small"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // === Supabase config (dina värden) ===
+  const SUPABASE_URL = "https://rvsormwqumgbqhvvfsnw.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2c29ybXdxdW1nYnFodnZmc253Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTk1OTYsImV4cCI6MjA3NjU3NTU5Nn0.cfn9Y_M2u5D-lXFBDWLuDAMJ4P92whTFgjo8hLj-w-0";
+  const RETURNS_BUCKET = "returns"; // skapa gärna bucket med detta namn (public)
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const qs = s => document.querySelector(s);
+  const fmt = d => new Date(d).toLocaleString();
+
+  const p = new URLSearchParams(location.search);
+  const ITEM_ID = p.get("item");
+
+  const el = {
+    msg: qs("#msg"),
+    itemPanel: qs("#itemPanel"),
+    statusPill: qs("#statusPill"),
+    itemName: qs("#itemName"),
+    itemRenta: qs("#itemRenta"),
+    startForm: qs("#startForm"),
+    returnForm: qs("#returnForm"),
+    info: qs("#info"),
+    fName: qs("#fName"),
+    fPhone: qs("#fPhone"),
+    fCompany: qs("#fCompany"),
+    fExpected: qs("#fExpected"),
+    fNote: qs("#fNote"),
+    fPhoto: qs("#fPhoto"),
+    fReturnNote: qs("#fReturnNote"),
+    btnStart: qs("#btnStart"),
+    btnReturn: qs("#btnReturn")
+  };
+
+  function loadIdentity(){
+    try{ const v = JSON.parse(localStorage.getItem("stegra_identity")||"{}");
+      el.fName.value = v.name||"";
+      el.fPhone.value = v.phone||"";
+      el.fCompany.value = v.company||"";
+    }catch{}
+  }
+  function saveIdentity(){
+    const v = { name: el.fName.value.trim(), phone: el.fPhone.value.trim(), company: el.fCompany.value.trim() };
+    localStorage.setItem("stegra_identity", JSON.stringify(v));
+  }
+  function statusBadge(s){
+    el.statusPill.textContent = (s||"available").toUpperCase();
+  }
+
+  async function fetchItem(id){
+    const { data, error } = await sb.from("items").select("*").eq("id", id).single();
+    if(error) throw error;
+    return data;
+  }
+  async function getActiveRental(item_id){
+    const { data, error } = await sb.from("rentals").select("*").eq("item_id", item_id).is("return_at", null).maybeSingle();
+    if(error) throw error;
+    return data;
+  }
+  async function uploadPhoto(file){
+    if(!file) return null;
+    const key = `${crypto.randomUUID()}-${file.name.replace(/\s+/g,'_')}`;
+    const { data, error } = await sb.storage.from(RETURNS_BUCKET).upload(key, file, { upsert:false });
+    if(error) { console.warn(error); return null; }
+    const { data: pub } = sb.storage.from(RETURNS_BUCKET).getPublicUrl(key);
+    return pub?.publicUrl || null;
+  }
+
+  async function startRental(item){
+    const user_name = el.fName.value.trim();
+    if(!user_name){ el.msg.textContent = "Fyll i namn."; return; }
+    const payload = {
+      item_id: item.id,
+      user_name,
+      phone: el.fPhone.value.trim() || null,
+      company: el.fCompany.value.trim() || null,
+      expected_return: el.fExpected.value || null,
+      note: el.fNote.value.trim() || null
+    };
+    const { error } = await sb.from("rentals").insert(payload);
+    if(error){ el.msg.textContent = "Kunde inte starta utlån."; console.error(error); return; }
+    saveIdentity();
+    await sb.from("items").update({ status:"out" }).eq("id", item.id);
+    el.msg.textContent = "Utlånad ✔";
+    render(item.id);
+  }
+
+  async function returnRental(item, rental){
+    let photoUrl = null;
+    if(el.fPhoto.files && el.fPhoto.files[0]) photoUrl = await uploadPhoto(el.fPhoto.files[0]);
+    const note = el.fReturnNote.value.trim() || null;
+    const { error } = await sb.from("rentals").update({ return_at: new Date().toISOString(), return_photo_url: photoUrl, note }).eq("id", rental.id);
+    if(error){ el.msg.textContent = "Kunde inte lämna tillbaka."; console.error(error); return; }
+    await sb.from("items").update({ status:"available" }).eq("id", item.id);
+    el.msg.textContent = "Återlämnad ✔";
+    render(item.id);
+  }
+
+  async function render(id){
+    if(!id){ el.msg.innerHTML = 'Ingen pryl vald. Lägg till <code>?item=&lt;UUID&gt;</code> i URL:en.'; return; }
+    el.msg.textContent = "Laddar…";
+    try{
+      const item = await fetchItem(id);
+      statusBadge(item.status);
+      el.itemName.textContent = item.name;
+      el.itemRenta.textContent = item.renta_asset_code || "—";
+      el.itemPanel.classList.remove("hidden");
+      loadIdentity();
+
+      const active = await getActiveRental(item.id);
+      if(active){
+        el.startForm.classList.add("hidden");
+        el.returnForm.classList.remove("hidden");
+        el.info.textContent = `Utlånad till ${active.user_name} sedan ${new Date(active.start_at).toLocaleString()}`;
+        el.btnReturn.onclick = () => returnRental(item, active);
+      } else {
+        el.returnForm.classList.add("hidden");
+        el.startForm.classList.remove("hidden");
+        el.info.textContent = "Prylen är tillgänglig.";
+        el.btnStart.onclick = () => startRental(item);
+      }
+      el.msg.textContent = "";
+    }catch(e){
+      console.error(e);
+      el.msg.textContent = "Pryl hittades inte. Kontrollera UUID.";
+    }
+  }
+
+  window.addEventListener("load", ()=>{
+    render(ITEM_ID);
+  });
+</script>
+</body>
+</html>
