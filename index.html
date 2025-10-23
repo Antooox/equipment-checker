@@ -34,6 +34,7 @@
     .gray{background:#9aa4c7}
     a.itemlink{color:#9ec1ff;text-decoration:none}
     .pill{display:inline-block;padding:5px 10px;border:1px solid #365; border-radius:999px; font-size:12px}
+    .back{background:#2b365f;border-color:#3e4c7a}
   </style>
 </head>
 <body>
@@ -84,6 +85,7 @@
         </div>
 
         <div id="info" class="small"></div>
+        <button id="btnBack" class="back">← Back to list</button>
       </div>
     </div>
   </div>
@@ -119,6 +121,7 @@
     startForm: qs("#startForm"),
     returnForm: qs("#returnForm"),
     info: qs("#info"),
+    btnBack: qs("#btnBack"),
     fName: qs("#fName"),
     fPhone: qs("#fPhone"),
     fCompany: qs("#fCompany"),
@@ -128,6 +131,11 @@
     fReturnNote: qs("#fReturnNote"),
     btnStart: qs("#btnStart"),
     btnReturn: qs("#btnReturn")
+  };
+
+  // Back to main list
+  el.btnBack.onclick = () => {
+    location.href = location.origin + location.pathname;
   };
 
   function loadIdentity(){
